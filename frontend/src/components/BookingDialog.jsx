@@ -6,10 +6,7 @@ import {
 } from '@mui/material'
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker'
 import { api, errorMessage } from '../api'
-import type { Resource } from '../types'
 import { parseBookingWindow, parseLocalDateTime, toLocalDateTimeInput } from '../utils/dateTime'
-
-type AvailabilityResponse = { resourceId: number; startUtc: string; endUtc: string; available: boolean }
 
 export default function BookingDialog({
   open,
@@ -19,20 +16,12 @@ export default function BookingDialog({
   initialEnd,
   onClose,
   onBooked
-}: {
-  open: boolean
-  resources: Resource[]
-  initialResource?: number
-  initialStart: string
-  initialEnd: string
-  onClose: () => void
-  onBooked: () => Promise<void>
 }) {
-  const [selectedResource, setSelectedResource] = useState<number | ''>('')
+  const [selectedResource, setSelectedResource] = useState('')
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
   const [purpose, setPurpose] = useState('')
-  const [availability, setAvailability] = useState<boolean | null>(null)
+  const [availability, setAvailability] = useState(null)
   const [checkingAvailability, setCheckingAvailability] = useState(false)
   const [savingBooking, setSavingBooking] = useState(false)
   const [error, setError] = useState('')
@@ -57,7 +46,7 @@ export default function BookingDialog({
     setCheckingAvailability(true)
     try {
       const { startUtc, endUtc } = parseBookingWindow(start, end)
-      const { data } = await api.get<AvailabilityResponse>('/bookings/availability', {
+      const { data } = await api.get('/bookings/availability', {
         params: { resourceId: selectedResource, start: startUtc, end: endUtc }
       })
       setAvailability(data.available)
@@ -75,7 +64,7 @@ export default function BookingDialog({
       if (!selectedResource || !purpose.trim()) throw new Error('Choose a resource and enter a purpose.')
       if (purpose.trim().length > 300) throw new Error('Purpose must be 300 characters or fewer.')
       const { startUtc, endUtc } = parseBookingWindow(start, end)
-      const { data } = await api.get<AvailabilityResponse>('/bookings/availability', {
+      const { data } = await api.get('/bookings/availability', {
         params: { resourceId: selectedResource, start: startUtc, end: endUtc }
       })
       if (!data.available) throw new Error('This resource is already booked for the selected time.')

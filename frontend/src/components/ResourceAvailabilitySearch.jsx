@@ -3,19 +3,15 @@ import { addHours } from 'date-fns'
 import { Alert, Box, Button, Card, CardContent, CircularProgress, Grid, Stack, Typography } from '@mui/material'
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker'
 import { api, errorMessage } from '../api'
-import type { Resource } from '../types'
 import { parseBookingWindow, parseLocalDateTime, toLocalDateTimeInput } from '../utils/dateTime'
 
 export default function ResourceAvailabilitySearch({
   resources,
   onBook
-}: {
-  resources: Resource[]
-  onBook: (resourceId: number, start: string, end: string) => void
 }) {
   const [searchStart, setSearchStart] = useState('')
   const [searchEnd, setSearchEnd] = useState('')
-  const [availableResourceIds, setAvailableResourceIds] = useState<number[] | null>(null)
+  const [availableResourceIds, setAvailableResourceIds] = useState(null)
   const [searchingAvailability, setSearchingAvailability] = useState(false)
   const [availabilitySearchError, setAvailabilitySearchError] = useState('')
 
@@ -25,7 +21,7 @@ export default function ResourceAvailabilitySearch({
     setSearchingAvailability(true)
     try {
       const { startUtc, endUtc } = parseBookingWindow(searchStart, searchEnd)
-      const { data } = await api.get<{ resourceIds: number[] }>('/bookings/availability/resources', {
+      const { data } = await api.get('/bookings/availability/resources', {
         params: { start: startUtc, end: endUtc }
       })
       setAvailableResourceIds(data.resourceIds)
@@ -38,7 +34,7 @@ export default function ResourceAvailabilitySearch({
 
   const availableResources = availableResourceIds === null
     ? []
-    : resources.filter(resource => availableResourceIds.includes(resource.id))
+    : resources.filter((resource) => availableResourceIds.includes(resource.id))
   const startDate = parseLocalDateTime(searchStart)
 
   return <Card variant="outlined" sx={{ mb: 4, borderRadius: 3, bgcolor: '#fbfcfe' }}>
@@ -52,7 +48,7 @@ export default function ResourceAvailabilitySearch({
           direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }}>
           <DateTimePicker label="Start time" value={parseLocalDateTime(searchStart)}
             format="dd/MM/yyyy hh:mm a"
-            onChange={value => {
+            onChange={(value) => {
               setSearchStart(toLocalDateTimeInput(value))
               setAvailableResourceIds(null)
               setAvailabilitySearchError('')
@@ -62,7 +58,7 @@ export default function ResourceAvailabilitySearch({
             slotProps={{ textField: { fullWidth: true, required: true } }} />
           <DateTimePicker label="End time" value={parseLocalDateTime(searchEnd)}
             format="dd/MM/yyyy hh:mm a"
-            onChange={value => {
+            onChange={(value) => {
               setSearchEnd(toLocalDateTimeInput(value))
               setAvailableResourceIds(null)
               setAvailabilitySearchError('')
@@ -84,7 +80,7 @@ export default function ResourceAvailabilitySearch({
               : 'No resources are free for that time'}
           </Typography>
           {availableResources.length > 0 && <Grid container spacing={1.5}>
-            {availableResources.map(resource => <Grid size={{ xs: 12, sm: 6, md: 4 }} key={resource.id}>
+            {availableResources.map((resource) => <Grid size={{ xs: 12, sm: 6, md: 4 }} key={resource.id}>
               <Card variant="outlined" sx={{ borderRadius: 2 }}>
                 <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>

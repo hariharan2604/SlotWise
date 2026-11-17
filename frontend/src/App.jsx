@@ -2,10 +2,9 @@ import { useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import Login from './components/Login'
 import Dashboard from './components/Dashboard'
-import type { AuthResponse } from './types'
 
 export default function App() {
-  const [auth, setAuth] = useState<AuthResponse | null>(() => {
+  const [auth, setAuth] = useState(() => {
     const token = localStorage.getItem('slotwise_token')
     const email = localStorage.getItem('slotwise_email')
     const displayName = localStorage.getItem('slotwise_name')
@@ -14,7 +13,7 @@ export default function App() {
   })
   const navigate = useNavigate()
 
-  const login = (value: AuthResponse) => {
+  const login = (value) => {
     localStorage.setItem('slotwise_token', value.token)
     localStorage.setItem('slotwise_email', value.email)
     localStorage.setItem('slotwise_name', value.displayName)

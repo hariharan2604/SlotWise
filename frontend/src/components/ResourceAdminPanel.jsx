@@ -5,9 +5,6 @@ import { api, errorMessage } from '../api'
 export default function ResourceAdminPanel({
   onCreated,
   onError
-}: {
-  onCreated: () => Promise<void>
-  onError: (message: string) => void
 }) {
   const [savingResource, setSavingResource] = useState(false)
   const [resourceName, setResourceName] = useState('')
