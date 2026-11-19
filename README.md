@@ -15,13 +15,22 @@ SlotWise is a small full-stack resource booking application built with ASP.NET C
 ## Prerequisites
 - .NET 10 SDK
 - Node.js 20+
-- Docker Desktop (or SQL Server 2022)
+- Docker Desktop (or SQL Server 2022 for local development without containers)
 - Git
 
-## Run SQL Server
-From the repository root:
+## Run with Docker Compose
+From the repository root, copy `.env.example` to `.env` and replace the SQL Server, JWT, and seeded-admin passwords/keys with local values. Keep `.env` private; it is ignored by Git.
 ```bash
-docker compose up -d
+docker compose up --build -d
+```
+Open the app at http://localhost:8080 and Swagger at http://localhost:8080/swagger. Compose waits for SQL Server to become healthy before starting the API. The SQL data is persisted in the `slotwise-sql-data` volume. Use `docker compose logs -f` to view logs and `docker compose down` to stop the stack. To also remove the database volume, run `docker compose down -v`.
+
+The frontend container proxies `/api` and `/swagger` to the API container, so browser requests and Swagger use the same origin. To change the host ports, update `APP_PORT` and `MSSQL_PORT` in `.env`.
+
+## Run locally without Docker
+Start SQL Server separately (Docker Desktop or an installed SQL Server), then run from the repository root:
+```bash
+docker compose up -d sqlserver
 ```
 Wait until SQL Server is ready.
 
