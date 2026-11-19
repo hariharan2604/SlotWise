@@ -93,6 +93,13 @@ This is a learning MVP, not a production-certified reservation platform. Before 
 - `DELETE /api/bookings/{id}`
 - `GET /api/bookings/availability?resourceId=1&start=...&end=...`
 
+Successful JSON responses use `{ "success": true, "message": "...", "data": ... }`. Errors use RFC Problem Details (`application/problem+json`) with a `traceId`; validation failures include an `errors` object. `204 No Content` is retained for successful booking cancellation.
+
+## Postman
+Import [`postman/SlotWise-Backend.postman_collection.json`](postman/SlotWise-Backend.postman_collection.json) and [`postman/SlotWise-Local.postman_environment.json`](postman/SlotWise-Local.postman_environment.json) into Postman, then select the **SlotWise Local** environment. Start the backend and SQL Server first.
+
+For regular user requests, run **Register user** (or **Login user**) to save a JWT automatically. For Admin-only requests, enter the local development admin password in the environment's `adminPassword` variable, then run **Login Admin**. The collection automatically picks a resource from **List active resources**, creates future UTC timestamps for booking and availability requests, and saves the created `bookingId`.
+
 ## Project structure
 ```text
 backend/SlotWise.Api

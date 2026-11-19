@@ -17,12 +17,15 @@ public class AuthController(UserManager<ApplicationUser> users, IConfiguration c
     public async Task<IActionResult> Register(RegisterRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.DisplayName) || request.DisplayName.Length > 100)
-            return BadRequest(new { message = "A valid display name is required." });
+            return Problem(statusCode: StatusCodes.Status400BadRequest, title: "Bad Request",
+                detail: "A valid display name is required.");
         var user = new ApplicationUser { UserName = request.Email, Email = request.Email, DisplayName = request.DisplayName.Trim() };
         var result = await users.CreateAsync(user, request.Password);
-        if (!result.Succeeded) return BadRequest(new { message = string.Join("; ", result.Errors.Select(e => e.Description)) });
+        if (!result.Succeeded)
+            return Problem(statusCode: StatusCodes.Status400BadRequest, title: "Bad Request",
+                detail: string.Join("; ", result.Errors.Select(e => e.Description)));
         await users.AddToRoleAsync(user, "User");
-        return Ok(await CreateToken(user));
+        return Ok(new ApiResponse<AuthResponse>(true, "Registration successful.", await CreateToken(user)));
     }
 
     [HttpPost("login")]
@@ -30,8 +33,9 @@ public class AuthController(UserManager<ApplicationUser> users, IConfiguration c
     {
         var user = await users.FindByEmailAsync(request.Email);
         if (user is null || !await users.CheckPasswordAsync(user, request.Password))
-            return Unauthorized(new { message = "Invalid email or password." });
-        return Ok(await CreateToken(user));
+            return Problem(statusCode: StatusCodes.Status401Unauthorized, title: "Unauthorized",
+                detail: "Invalid email or password.");
+        return Ok(new ApiResponse<AuthResponse>(true, "Login successful.", await CreateToken(user)));
     }
 
     private async Task<AuthResponse> CreateToken(ApplicationUser user)

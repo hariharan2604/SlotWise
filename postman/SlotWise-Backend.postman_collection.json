@@ -1,0 +1,434 @@
+{
+  "info": {
+    "_postman_id": "eb12a943-2f2c-4cfe-9d8c-ae104ca2d00a",
+    "name": "SlotWise Backend API",
+    "description": "Backend API requests for authentication, resources, bookings, and availability. Login/register responses save the JWT into the active environment. Booking timestamps are generated as future UTC values before each request.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const start = new Date(Date.now() + 24 * 60 * 60 * 1000);",
+          "const end = new Date(start.getTime() + 60 * 60 * 1000);",
+          "pm.environment.set('startUtc', start.toISOString());",
+          "pm.environment.set('endUtc', end.toISOString());"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json().data;",
+                  "  pm.environment.set('token', body.token);",
+                  "  pm.environment.set('userEmail', body.email);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"Postman User\",\n  \"email\": \"postman.{{$guid}}@example.com\",\n  \"password\": \"DemoPass123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Creates a User account and stores the returned JWT in the active environment."
+          },
+          "response": []
+        },
+        {
+          "name": "Login user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json().data;",
+                  "  pm.environment.set('token', body.token);",
+                  "  pm.environment.set('userEmail', body.email);",
+                  "  pm.environment.set('userRole', body.role);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Logs in the user created by Register user (or another user entered in the environment) and saves the JWT."
+          },
+          "response": []
+        },
+        {
+          "name": "Login Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json().data;",
+                  "  pm.environment.set('token', body.token);",
+                  "  pm.environment.set('userEmail', body.email);",
+                  "  pm.environment.set('userRole', body.role);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Logs in with the local development admin account. Set adminPassword in the environment first; the returned JWT is saved automatically."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Resources",
+      "item": [
+        {
+          "name": "List active resources",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const resources = pm.response.json().data;",
+                  "  if (resources.length > 0) pm.environment.set('resourceId', resources[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/resources",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "resources"
+              ]
+            },
+            "description": "Requires a valid JWT. Automatically selects the first returned resource for subsequent requests."
+          },
+          "response": []
+        },
+        {
+          "name": "Create resource (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Test Resource\",\n  \"description\": \"Created from the SlotWise Postman collection\",\n  \"location\": \"First floor\",\n  \"capacity\": 4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/resources",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "resources"
+              ]
+            },
+            "description": "Requires an Admin JWT. Returns 201 Created."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        {
+          "name": "Create booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  pm.environment.set('bookingId', pm.response.json().data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceId\": {{resourceId}},\n  \"start\": \"{{startUtc}}\",\n  \"end\": \"{{endUtc}}\",\n  \"purpose\": \"Postman API test booking\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings"
+              ]
+            },
+            "description": "Requires a valid JWT and an active resource. Uses a generated one-hour UTC interval starting one day from now; saves the returned booking ID."
+          },
+          "response": []
+        },
+        {
+          "name": "List my bookings",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/mine",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                "mine"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List all bookings (Admin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings"
+              ]
+            },
+            "description": "Requires an Admin JWT."
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel booking",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/{{bookingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                "{{bookingId}}"
+              ]
+            },
+            "description": "Requires a valid JWT. A user can cancel their own future booking; Admin can cancel any future booking. Returns 204 No Content."
+          },
+          "response": []
+        },
+        {
+          "name": "Check resource availability",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/availability?resourceId={{resourceId}}&start={{startUtc}}&end={{endUtc}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                "availability"
+              ],
+              "query": [
+                {
+                  "key": "resourceId",
+                  "value": "{{resourceId}}"
+                },
+                {
+                  "key": "start",
+                  "value": "{{startUtc}}"
+                },
+                {
+                  "key": "end",
+                  "value": "{{endUtc}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List available resources",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/availability/resources?start={{startUtc}}&end={{endUtc}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                "availability",
+                "resources"
+              ],
+              "query": [
+                {
+                  "key": "start",
+                  "value": "{{startUtc}}"
+                },
+                {
+                  "key": "end",
+                  "value": "{{endUtc}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

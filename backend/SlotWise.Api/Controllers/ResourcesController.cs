@@ -18,7 +18,7 @@ public class ResourcesController(AppDbContext db) : ControllerBase
         var data = await db.Resources.AsNoTracking().Where(r => r.IsActive).OrderBy(r => r.Name)
             .Select(r => new ResourceResponse(r.Id, r.Name, r.Description, r.Location, r.Capacity, r.IsActive))
             .ToListAsync(ct);
-        return Ok(data);
+        return Ok(new ApiResponse<IReadOnlyList<ResourceResponse>>(true, "Resources retrieved successfully.", data));
     }
 
     [HttpPost]
@@ -29,17 +29,22 @@ public class ResourcesController(AppDbContext db) : ControllerBase
         var description = request.Description?.Trim() ?? "";
         var location = request.Location?.Trim() ?? "";
         if (string.IsNullOrWhiteSpace(name) || name.Length > 120)
-            return BadRequest(new { message = "A resource name is required (maximum 120 characters)." });
+            return Problem(statusCode: StatusCodes.Status400BadRequest, title: "Bad Request",
+                detail: "A resource name is required (maximum 120 characters).");
         if (description.Length > 500)
-            return BadRequest(new { message = "Description cannot exceed 500 characters." });
+            return Problem(statusCode: StatusCodes.Status400BadRequest, title: "Bad Request",
+                detail: "Description cannot exceed 500 characters.");
         if (location.Length > 150)
-            return BadRequest(new { message = "Location cannot exceed 150 characters." });
+            return Problem(statusCode: StatusCodes.Status400BadRequest, title: "Bad Request",
+                detail: "Location cannot exceed 150 characters.");
         if (request.Capacity < 1)
-            return BadRequest(new { message = "Capacity must be a positive number." });
+            return Problem(statusCode: StatusCodes.Status400BadRequest, title: "Bad Request",
+                detail: "Capacity must be a positive number.");
         var resource = new Resource { Name = name, Description = description, Location = location, Capacity = request.Capacity };
         db.Resources.Add(resource);
         await db.SaveChangesAsync(ct);
+        var response = new ResourceResponse(resource.Id, resource.Name, resource.Description, resource.Location, resource.Capacity, resource.IsActive);
         return Created("/api/resources",
-            new ResourceResponse(resource.Id, resource.Name, resource.Description, resource.Location, resource.Capacity, resource.IsActive));
+            new ApiResponse<ResourceResponse>(true, "Resource created successfully.", response));
     }
 }
