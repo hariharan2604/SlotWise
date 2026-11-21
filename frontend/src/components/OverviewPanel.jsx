@@ -1,5 +1,4 @@
 import { Box, Button, Card, CardContent, Chip, Grid, Stack, Typography } from '@mui/material'
-import type { Booking, Resource } from '../types'
 import ResourceAvailabilitySearch from './ResourceAvailabilitySearch'
 
 export default function OverviewPanel({
@@ -7,13 +6,8 @@ export default function OverviewPanel({
   bookings,
   onBook,
   onViewBookings
-}: {
-  resources: Resource[]
-  bookings: Booking[]
-  onBook: (resourceId?: number, start?: string, end?: string) => void
-  onViewBookings: () => void
 }) {
-  const activeBookings = bookings.filter(b => b.status === 'Confirmed' && new Date(b.endUtc).getTime() > Date.now())
+  const activeBookings = bookings.filter((b) => b.status === 'Confirmed' && new Date(b.endUtc).getTime() > Date.now())
 
   return <>
     <Grid container spacing={2} sx={{ mb: 4 }}>
@@ -21,7 +15,7 @@ export default function OverviewPanel({
         { label: 'Bookable resources', value: resources.length, note: 'Ready to reserve' },
         { label: 'Upcoming bookings', value: activeBookings.length, note: 'Confirmed and ahead' },
         { label: 'Your reservations', value: bookings.length, note: 'All booking history' }
-      ].map(item => <Grid size={{ xs: 12, sm: 4 }} key={item.label}>
+      ].map((item) => <Grid size={{ xs: 12, sm: 4 }} key={item.label}>
         <Card variant="outlined" sx={{ height: '100%', borderRadius: 3 }}>
           <CardContent sx={{ p: 2.5 }}>
             <Typography variant="body2" color="text.secondary">{item.label}</Typography>
@@ -43,7 +37,7 @@ export default function OverviewPanel({
       <Typography fontWeight={650}>No resources are available yet</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>Ask a workspace administrator to add the first resource.</Typography>
     </CardContent></Card> : <Grid container spacing={2}>
-      {resources.map(resource => <Grid size={{ xs: 12, sm: 6, md: 4 }} key={resource.id}>
+      {resources.map((resource) => <Grid size={{ xs: 12, sm: 6, md: 4 }} key={resource.id}>
         <Card variant="outlined" sx={{ height: '100%', borderRadius: 3, transition: 'transform .18s, box-shadow .18s', '&:hover': { transform: 'translateY(-3px)', boxShadow: 4 } }}>
           <CardContent sx={{ p: 2.5 }}>
             <Stack spacing={1.5} sx={{ height: '100%' }}>

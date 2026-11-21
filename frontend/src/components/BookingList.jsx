@@ -1,8 +1,7 @@
 import { Box, Button, Card, CardContent, Chip, Stack, Typography } from '@mui/material'
-import type { Booking } from '../types'
 import { formatDateTime } from '../utils/dateTime'
 
-export default function BookingList({ bookings, onCancel }: { bookings: Booking[]; onCancel?: (id: number) => void }) {
+export default function BookingList({ bookings, onCancel }) {
   if (!bookings.length) {
     return <Card variant="outlined" sx={{ borderStyle: 'dashed' }}>
       <CardContent sx={{ py: 5, textAlign: 'center' }}>
@@ -13,7 +12,7 @@ export default function BookingList({ bookings, onCancel }: { bookings: Booking[
   }
 
   return <Stack spacing={1.5}>
-    {bookings.map(booking => {
+    {bookings.map((booking) => {
       const canCancel = booking.status === 'Confirmed' && new Date(booking.startUtc).getTime() > Date.now()
       return <Card variant="outlined" key={booking.id} sx={{ borderRadius: 2.5 }}>
         <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>

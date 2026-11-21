@@ -3,9 +3,8 @@ import {
   Alert, Box, Button, Card, CardContent, CircularProgress, Divider, Stack, TextField, Typography
 } from '@mui/material'
 import { api, errorMessage } from '../api'
-import type { AuthResponse } from '../types'
 
-export default function Login({ onLogin }: { onLogin: (auth: AuthResponse) => void }) {
+export default function Login({ onLogin }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
@@ -17,7 +16,7 @@ export default function Login({ onLogin }: { onLogin: (auth: AuthResponse) => vo
     setError('')
     setLoading(true)
     try {
-      const { data } = await api.post<AuthResponse>(
+      const { data } = await api.post(
         register ? '/auth/register' : '/auth/login',
         register ? { displayName: displayName.trim(), email: email.trim(), password } : { email: email.trim(), password }
       )

@@ -3,33 +3,30 @@ import {
   Alert, AppBar, Box, Button, CircularProgress, Container, Grid, Stack, Tab, Tabs, Toolbar, Typography
 } from '@mui/material'
 import { api, errorMessage } from '../api'
-import type { AuthResponse, Booking, Resource } from '../types'
 import BookingList from './BookingList'
 import BookingDialog from './BookingDialog'
 import OverviewPanel from './OverviewPanel'
 import ResourceAdminPanel from './ResourceAdminPanel'
 
-type View = 'overview' | 'bookings' | 'admin'
-
-export default function Dashboard({ auth, onLogout }: { auth: AuthResponse; onLogout: () => void }) {
+export default function Dashboard({ auth, onLogout }) {
   const isAdmin = auth.role === 'Admin'
-  const [view, setView] = useState<View>('overview')
-  const [resources, setResources] = useState<Resource[]>([])
-  const [bookings, setBookings] = useState<Booking[]>([])
-  const [allBookings, setAllBookings] = useState<Booking[]>([])
+  const [view, setView] = useState('overview')
+  const [resources, setResources] = useState([])
+  const [bookings, setBookings] = useState([])
+  const [allBookings, setAllBookings] = useState([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [bookingDialog, setBookingDialog] = useState(false)
-  const [initialResource, setInitialResource] = useState<number | undefined>()
+  const [initialResource, setInitialResource] = useState()
   const [initialStart, setInitialStart] = useState('')
   const [initialEnd, setInitialEnd] = useState('')
 
   const load = async () => {
-    const allBookingsRequest = isAdmin ? api.get<Booking[]>('/bookings') : Promise.resolve(null)
+    const allBookingsRequest = isAdmin ? api.get('/bookings') : Promise.resolve(null)
     const [resourceResponse, myBookingResponse, allBookingResponse] = await Promise.all([
-      api.get<Resource[]>('/resources'),
-      api.get<Booking[]>('/bookings/mine'),
+      api.get('/resources'),
+      api.get('/bookings/mine'),
       allBookingsRequest
     ])
     setResources(resourceResponse.data)
@@ -38,10 +35,10 @@ export default function Dashboard({ auth, onLogout }: { auth: AuthResponse; onLo
   }
 
   useEffect(() => {
-    load().catch(e => setError(errorMessage(e))).finally(() => setLoading(false))
+    load().catch((e) => setError(errorMessage(e))).finally(() => setLoading(false))
   }, [])
 
-  const openBooking = (resourceId?: number, start = '', end = '') => {
+  const openBooking = (resourceId, start = '', end = '') => {
     setInitialResource(resourceId)
     setInitialStart(start)
     setInitialEnd(end)
@@ -49,7 +46,7 @@ export default function Dashboard({ auth, onLogout }: { auth: AuthResponse; onLo
     setBookingDialog(true)
   }
 
-  const cancelBooking = async (id: number) => {
+  const cancelBooking = async (id) => {
     setError('')
     try {
       await api.delete(`/bookings/${id}`)
@@ -109,7 +106,7 @@ export default function Dashboard({ auth, onLogout }: { auth: AuthResponse; onLo
         </Stack>
       </Box>
 
-      <Tabs value={view} onChange={(_, value: View) => setView(value)} sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}>
+      <Tabs value={view} onChange={(_, value) => setView(value)} sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}>
         <Tab value="overview" label="Overview" />
         <Tab value="bookings" label="My bookings" />
         {isAdmin && <Tab value="admin" label="Workspace admin" />}
