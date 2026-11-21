@@ -50,7 +50,7 @@ public class AuthController(UserManager<ApplicationUser> users, IConfiguration c
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]!));
         var token = new JwtSecurityToken(config["Jwt:Issuer"], config["Jwt:Audience"], claims,
-            expires: DateTime.UtcNow.AddHours(8), signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
+            expires: DateTime.UtcNow.AddHours(3), signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
         return new AuthResponse(new JwtSecurityTokenHandler().WriteToken(token), user.Email!, user.DisplayName, roles.FirstOrDefault() ?? "User");
     }
 }

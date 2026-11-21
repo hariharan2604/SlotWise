@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import {
-  Alert, AppBar, Box, Button, CircularProgress, Container, Grid, Stack, Tab, Tabs, Toolbar, Typography
+  Alert, Avatar, Box, Button, CircularProgress, Drawer, Grid, IconButton, Snackbar, Stack, Typography
 } from '@mui/material'
 import { api, errorMessage } from '../api'
 import BookingList from './BookingList'
 import BookingDialog from './BookingDialog'
 import OverviewPanel from './OverviewPanel'
 import ResourceAdminPanel from './ResourceAdminPanel'
+import UiIcon from './UiIcon'
 
 export default function Dashboard({ auth, onLogout }) {
   const isAdmin = auth.role === 'Admin'
@@ -23,11 +24,10 @@ export default function Dashboard({ auth, onLogout }) {
   const [initialEnd, setInitialEnd] = useState('')
 
   const load = async () => {
-    const allBookingsRequest = isAdmin ? api.get('/bookings') : Promise.resolve(null)
     const [resourceResponse, myBookingResponse, allBookingResponse] = await Promise.all([
       api.get('/resources'),
       api.get('/bookings/mine'),
-      allBookingsRequest
+      isAdmin ? api.get('/bookings') : Promise.resolve(null)
     ])
     setResources(resourceResponse.data)
     setBookings(myBookingResponse.data)
@@ -38,6 +38,18 @@ export default function Dashboard({ auth, onLogout }) {
     load().catch((e) => setError(errorMessage(e))).finally(() => setLoading(false))
   }, [])
 
+  const refresh = async () => {
+    setError('')
+    setLoading(true)
+    try {
+      await load()
+    } catch (e) {
+      setError(errorMessage(e))
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const openBooking = (resourceId, start = '', end = '') => {
     setInitialResource(resourceId)
     setInitialStart(start)
@@ -47,6 +59,7 @@ export default function Dashboard({ auth, onLogout }) {
   }
 
   const cancelBooking = async (id) => {
+    if (!window.confirm('Cancel this booking? This action cannot be undone.')) return
     setError('')
     try {
       await api.delete(`/bookings/${id}`)
@@ -60,93 +73,147 @@ export default function Dashboard({ auth, onLogout }) {
   const resourceCreated = async () => {
     setError('')
     setMessage('Resource added to the workspace.')
-    try {
-      await load()
-    } catch (e) {
-      setError(errorMessage(e))
-    }
+    try { await load() } catch (e) { setError(errorMessage(e)) }
   }
 
   const bookingCreated = async () => {
     setMessage('Your resource is booked.')
-    try {
-      await load()
-    } catch (e) {
-      setError(errorMessage(e))
-    }
+    try { await load() } catch (e) { setError(errorMessage(e)) }
   }
 
-  return <>
-    <AppBar position="sticky" elevation={0} color="inherit" sx={{ borderBottom: '1px solid #e8ecf1' }}>
-      <Toolbar sx={{ maxWidth: 1280, width: '100%', mx: 'auto', px: { xs: 2, sm: 3 } }}>
-        <Typography variant="h6" fontWeight={800} letterSpacing={-0.7} sx={{ flexGrow: 1, color: '#19354d' }}>
-          slotwise<span style={{ color: '#398c78' }}>.</span>
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mr: 2, display: { xs: 'none', sm: 'block' } }}>
-          {auth.displayName} · {auth.role}
-        </Typography>
-        <Button onClick={onLogout} color="inherit">Sign out</Button>
-      </Toolbar>
-    </AppBar>
-    <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
-      <Box sx={{
-        p: { xs: 3, md: 4 }, mb: 3, borderRadius: 4, color: 'white',
-        background: 'linear-gradient(115deg, #19354d 0%, #245f70 65%, #398c78 100%)'
+  const navItems = [
+    { id: 'overview', label: 'Explore spaces', icon: 'grid' },
+    { id: 'bookings', label: 'My bookings', icon: 'calendar' },
+    ...(isAdmin ? [{ id: 'admin', label: 'Manage workspace', icon: 'settings' }] : [])
+  ]
+  const viewData = {
+    overview: { eyebrow: 'YOUR WORKSPACE', title: 'Find your next space.', note: 'Good spaces make room for good ideas.' },
+    bookings: { eyebrow: 'YOUR SCHEDULE', title: 'Time well reserved.', note: 'All your upcoming plans, together in one place.' },
+    admin: { eyebrow: 'WORKSPACE TOOLS', title: 'Make room for everyone.', note: 'Keep shared resources useful, clear, and ready to book.' }
+  }[view]
+  const initials = auth.displayName?.split(/\s+/).map((part) => part[0]).slice(0, 2).join('').toUpperCase()
+  const today = new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date())
+
+  const NavLinks = ({ compact = false }) => <Stack direction={compact ? 'row' : 'column'} spacing={compact ? 0 : .65}>
+    {navItems.map((item) => {
+      const active = view === item.id
+      return <Button key={item.id} onClick={() => setView(item.id)} startIcon={<UiIcon name={item.icon} size={19} />} sx={{
+        minWidth: 0, justifyContent: compact ? 'center' : 'flex-start', flexDirection: compact ? 'column' : 'row',
+        gap: compact ? .45 : 0, px: compact ? .5 : 1.5, py: compact ? 1 : 1.25, minHeight: compact ? 58 : 48,
+        borderRadius: compact ? 1.5 : 1,
+        color: compact ? (active ? '#24543f' : '#85867d') : (active ? '#f5f4e9' : 'rgba(248,246,236,.58)'),
+        bgcolor: compact ? 'transparent' : (active ? 'rgba(214,242,120,.12)' : 'transparent'),
+        '& .MuiButton-startIcon': { mr: compact ? 0 : 1.5, ml: 0 },
+        '&:hover': { bgcolor: compact ? 'rgba(36,84,63,.07)' : 'rgba(214,242,120,.1)', color: compact ? '#24543f' : '#fff' }
       }}>
-        <Typography variant="overline" sx={{ color: '#b7ead9', letterSpacing: 1.8 }}>YOUR WORKSPACE</Typography>
-        <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" spacing={2}>
-          <Box>
-            <Typography variant="h4" fontWeight={750} letterSpacing={-1}>Make space for what matters.</Typography>
-            <Typography sx={{ mt: 1, color: 'rgba(255,255,255,.75)' }}>Discover a resource and reserve the time you need.</Typography>
+        {compact ? <Typography sx={{ fontSize: 10, fontWeight: active ? 800 : 600, lineHeight: 1.1 }}>{item.label.split(' ')[0]}</Typography> : item.label}
+      </Button>
+    })}
+  </Stack>
+
+  return <Box sx={{ minHeight: '100vh', bgcolor: '#f4f2eb', display: 'flex', color: '#232921' }}>
+    <Drawer variant="permanent" sx={{
+      display: { xs: 'none', md: 'block' }, width: 252, flexShrink: 0,
+      '& .MuiDrawer-paper': { width: 252, border: 'none', bgcolor: '#193d2d', color: '#f8f6ec', px: 2.2, py: 2.5, display: 'flex', flexDirection: 'column', height: '100vh' }
+    }}>
+      <Stack direction="row" alignItems="center" spacing={1.2} sx={{ px: 1.2, mb: 6 }}>
+        <Box sx={{ width: 34, height: 34, borderRadius: '50%', display: 'grid', placeItems: 'center', bgcolor: '#d6f278', color: '#1e392c' }}><UiIcon name="room" size={18} /></Box>
+        <Typography sx={{ fontWeight: 800, letterSpacing: '-.045em', fontSize: 22 }}>slotwise<span style={{ color: '#d6f278' }}>.</span></Typography>
+      </Stack>
+      <Typography sx={{ pl: 1.5, mb: 1.2, color: 'rgba(248,246,236,.38)', fontSize: 10, fontWeight: 800, letterSpacing: 1.8 }}>MENU</Typography>
+      <NavLinks />
+      <Box sx={{ mt: 'auto', p: 1.5, borderRadius: 1.5, bgcolor: 'rgba(255,255,255,.055)', border: '1px solid rgba(255,255,255,.07)' }}>
+        <Stack direction="row" spacing={1.25} alignItems="center">
+          <Avatar sx={{ width: 38, height: 38, bgcolor: '#d6f278', color: '#193d2d', fontSize: 12, fontWeight: 800 }}>{initials}</Avatar>
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography variant="body2" noWrap fontWeight={700}>{auth.displayName}</Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(248,246,236,.43)' }}>{auth.role}</Typography>
           </Box>
-          <Button variant="contained" onClick={() => openBooking()} sx={{
-            bgcolor: '#a9e3ce', color: '#18364a', fontWeight: 700, px: 2.5, py: 1.2,
-            '&:hover': { bgcolor: '#c4f0e0' }, whiteSpace: 'nowrap'
-          }}>New booking</Button>
+        </Stack>
+        <Button fullWidth onClick={onLogout} startIcon={<UiIcon name="logout" size={17} />} sx={{ mt: 1.5, justifyContent: 'flex-start', color: 'rgba(248,246,236,.62)', px: 1.1, '&:hover': { bgcolor: 'rgba(255,255,255,.07)' } }}>Sign out</Button>
+      </Box>
+    </Drawer>
+
+    <Box component="main" sx={{ flex: 1, minWidth: 0, pb: { xs: 9, md: 0 } }}>
+      <Box sx={{ height: 72, px: { xs: 2.2, sm: 3.5, lg: 5 }, display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'rgba(255,254,250,.84)', borderBottom: '1px solid #e9e7de' }}>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Typography sx={{ display: { xs: 'block', md: 'none' }, fontSize: 20, fontWeight: 800, letterSpacing: '-.04em' }}>slotwise<span style={{ color: '#718a49' }}>.</span></Typography>
+          <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+            <Typography sx={{ color: '#77796f', fontSize: 12 }}>{today}</Typography>
+            <Typography sx={{ fontWeight: 700, fontSize: 13 }}>{viewData.eyebrow}</Typography>
+          </Box>
+        </Stack>
+        <Stack direction="row" spacing={1.25} alignItems="center">
+          <Typography sx={{ display: { xs: 'none', sm: 'block' }, fontSize: 13, color: '#77796f' }}>Hello, <strong style={{ color: '#232921' }}>{auth.displayName?.split(' ')[0]}</strong></Typography>
+          <Avatar sx={{ bgcolor: '#e5eadc', color: '#24543f', width: 38, height: 38, fontSize: 12, fontWeight: 800 }}>{initials}</Avatar>
+          <IconButton onClick={onLogout} aria-label="Sign out" sx={{ display: { xs: 'flex', md: 'none' }, color: '#24543f' }}><UiIcon name="logout" size={18} /></IconButton>
         </Stack>
       </Box>
 
-      <Tabs value={view} onChange={(_, value) => setView(value)} sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}>
-        <Tab value="overview" label="Overview" />
-        <Tab value="bookings" label="My bookings" />
-        {isAdmin && <Tab value="admin" label="Workspace admin" />}
-      </Tabs>
-      {message && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMessage('')}>{message}</Alert>}
-      {error && !bookingDialog && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
-
-      {loading ? <Box sx={{ display: 'grid', placeItems: 'center', py: 10 }}><CircularProgress /></Box> : <>
-        {view === 'overview' && <OverviewPanel
-          resources={resources}
-          bookings={bookings}
-          onBook={openBooking}
-          onViewBookings={() => setView('bookings')}
-        />}
-        {view === 'bookings' && <Box>
-          <Typography variant="h5" fontWeight={750} letterSpacing={-0.5}>My bookings</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>Manage your upcoming reservations and review past bookings.</Typography>
-          <BookingList bookings={bookings} onCancel={cancelBooking} />
-        </Box>}
-        {view === 'admin' && isAdmin && <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 5 }}>
-            <ResourceAdminPanel onCreated={resourceCreated} onError={setError} />
+      <Box sx={{ maxWidth: 1340, mx: 'auto', px: { xs: 2, sm: 3.5, lg: 5 }, py: { xs: 3, md: 4.5 } }}>
+        <Grid container spacing={2.5} alignItems="stretch" sx={{ mb: 4 }}>
+          <Grid size={{ xs: 12, md: 8 }}>
+            <Box sx={{ minHeight: { xs: 210, md: 246 }, height: '100%', p: { xs: 3, sm: 4.5 }, borderRadius: 1.25, overflow: 'hidden', position: 'relative', color: '#f8f6ec', bgcolor: '#24543f', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <Box sx={{ position: 'absolute', right: { xs: -105, md: -40 }, top: { xs: 0, md: -55 }, width: 290, height: 290, borderRadius: '50%', bgcolor: 'rgba(214,242,120,.09)', border: '1px solid rgba(214,242,120,.18)', '&::before': { content: '""', position: 'absolute', inset: 30, borderRadius: '50%', border: '1px solid rgba(214,242,120,.25)' }, '&::after': { content: '""', position: 'absolute', inset: 67, borderRadius: '50%', border: '1px solid rgba(214,242,120,.2)' } }} />
+              <Box sx={{ position: 'relative', maxWidth: 570 }}>
+                <Typography sx={{ color: '#d6f278', fontSize: 10, fontWeight: 800, letterSpacing: 2 }}>{viewData.eyebrow}</Typography>
+                <Typography sx={{ mt: 1.2, fontSize: { xs: 32, sm: 42, lg: 48 }, lineHeight: 1.04, letterSpacing: '-.06em', fontWeight: 700 }}>{viewData.title}</Typography>
+                <Typography sx={{ mt: 1.3, color: 'rgba(248,246,236,.66)', fontSize: 14 }}>{viewData.note}</Typography>
+              </Box>
+              <Box sx={{ position: 'relative', mt: 2.5 }}>
+                {view === 'overview' && <Button onClick={() => openBooking()} variant="contained" endIcon={<UiIcon name="arrow" size={17} />} sx={{ bgcolor: '#d6f278', color: '#1e392c', '&:hover': { bgcolor: '#e3fa9a' } }}>Book a space</Button>}
+                {view === 'bookings' && <Typography sx={{ fontSize: 12, color: 'rgba(248,246,236,.55)' }}>A clear plan is a good start.</Typography>}
+                {view === 'admin' && <Typography sx={{ fontSize: 12, color: 'rgba(248,246,236,.55)' }}>Your spaces. Your schedule. Your call.</Typography>}
+              </Box>
+            </Box>
           </Grid>
-          <Grid size={{ xs: 12, md: 7 }}>
-            <Typography variant="h6" fontWeight={750} sx={{ mb: 1 }}>All workspace bookings</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Review reservations across the workspace. Future bookings can be cancelled.</Typography>
-            <BookingList bookings={allBookings} onCancel={cancelBooking} />
+          <Grid size={{ xs: 12, md: 4 }}>
+            <Box sx={{ height: '100%', minHeight: 180, p: 3.5, borderRadius: 1.25, position: 'relative', overflow: 'hidden', bgcolor: '#e7edda', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <Box sx={{ position: 'absolute', right: -24, bottom: -37, width: 180, height: 180, borderRadius: '50%', bgcolor: '#d6f278', opacity: .48 }} />
+              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ position: 'relative' }}>
+                <Typography sx={{ color: '#66745d', fontSize: 11, fontWeight: 800, letterSpacing: 1.5 }}>TODAY</Typography>
+                <Box sx={{ width: 38, height: 38, borderRadius: '50%', display: 'grid', placeItems: 'center', bgcolor: 'rgba(36,84,63,.08)', color: '#24543f' }}><UiIcon name="sparkle" size={19} /></Box>
+              </Stack>
+              <Box sx={{ position: 'relative' }}>
+                <Typography sx={{ fontSize: 28, fontWeight: 750, letterSpacing: '-.05em', color: '#22372a' }}>{new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(new Date())}</Typography>
+                <Typography sx={{ mt: .5, fontSize: 13, color: '#66745d' }}>Make a little room for a new idea.</Typography>
+              </Box>
+            </Box>
           </Grid>
-        </Grid>}
-      </>}
-    </Container>
+        </Grid>
 
-    <BookingDialog
-      open={bookingDialog}
-      resources={resources}
-      initialResource={initialResource}
-      initialStart={initialStart}
-      initialEnd={initialEnd}
-      onClose={() => setBookingDialog(false)}
-      onBooked={bookingCreated}
-    />
-  </>
+        <Snackbar open={Boolean(message)} autoHideDuration={4000} onClose={() => setMessage('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+          <Alert severity="success" variant="filled" sx={{ width: '100%', borderRadius: 1, bgcolor: '#24543f' }} onClose={() => setMessage('')}>{message}</Alert>
+        </Snackbar>
+        {error && <Alert severity="error" variant="outlined" sx={{ mb: 3, borderRadius: 1, bgcolor: '#fffefa', alignItems: 'center' }} action={
+          error.toLowerCase().includes('server') || error.toLowerCase().includes('reach')
+            ? <Button color="inherit" size="small" onClick={refresh}>Try again</Button>
+            : undefined
+        } onClose={() => setError('')}>{error}</Alert>}
+
+        {loading ? <Box sx={{ display: 'grid', placeItems: 'center', minHeight: 260 }}><CircularProgress color="primary" /></Box> : <>
+          {view === 'overview' && <OverviewPanel resources={resources} bookings={bookings} onBook={openBooking} onViewBookings={() => setView('bookings')} />}
+          {view === 'bookings' && <Box>
+            <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'end' }} spacing={1.5} sx={{ mb: 2.5 }}>
+              <Box><Typography variant="h5">Your bookings</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: .5 }}>The spaces you’ve made time for.</Typography></Box>
+              <Button onClick={() => openBooking()} variant="outlined" startIcon={<UiIcon name="plus" size={17} />}>New booking</Button>
+            </Stack>
+            <BookingList bookings={bookings} onCancel={cancelBooking} />
+          </Box>}
+          {view === 'admin' && isAdmin && <Grid container spacing={2.5} alignItems="start">
+            <Grid size={{ xs: 12, md: 5 }}><ResourceAdminPanel onCreated={resourceCreated} /></Grid>
+            <Grid size={{ xs: 12, md: 7 }}>
+              <Box sx={{ mb: 2 }}><Typography variant="h5">Workspace schedule</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: .5 }}>Bookings across the team. Future reservations can be cancelled.</Typography></Box>
+              <BookingList bookings={allBookings} onCancel={cancelBooking} />
+            </Grid>
+          </Grid>}
+        </>}
+      </Box>
+    </Box>
+
+    <Box sx={{ position: 'fixed', display: { xs: 'block', md: 'none' }, zIndex: 1200, bottom: 0, left: 0, right: 0, px: 1.5, pb: 'max(10px, env(safe-area-inset-bottom))', pt: 1, bgcolor: 'rgba(255,254,250,.96)', borderTop: '1px solid #e9e7de', backdropFilter: 'blur(14px)' }}>
+      <NavLinks compact />
+    </Box>
+    <BookingDialog open={bookingDialog} resources={resources} initialResource={initialResource} initialStart={initialStart} initialEnd={initialEnd} onClose={() => setBookingDialog(false)} onBooked={bookingCreated} />
+  </Box>
 }
