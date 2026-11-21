@@ -109,7 +109,7 @@ using (var scope = app.Services.CreateScope())
         var admin = await users.FindByEmailAsync(adminEmail);
         if (admin is null)
         {
-            admin = new ApplicationUser { UserName = adminEmail, Email = adminEmail, DisplayName = "SlotWise Admin", EmailConfirmed = true };
+            admin = new ApplicationUser { UserName = adminEmail, Email = adminEmail, DisplayName = "Admin", EmailConfirmed = true };
             var result = await users.CreateAsync(admin, adminPassword);
             if (result.Succeeded) await users.AddToRoleAsync(admin, "Admin");
         }
