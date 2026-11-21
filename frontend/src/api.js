@@ -1,6 +1,9 @@
 import axios from 'axios'
 
-export const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5080/api' })
+export const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5080/api',
+  withCredentials: true
+})
 
 api.interceptors.response.use((response) => {
   const body = response.data
@@ -8,12 +11,6 @@ api.interceptors.response.use((response) => {
     return { ...response, data: body.data }
   }
   return response
-})
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('slotwise_token')
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  return config
 })
 
 export function errorMessage(error) {

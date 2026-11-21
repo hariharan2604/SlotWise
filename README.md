@@ -4,6 +4,7 @@ SlotWise is a small full-stack resource booking application built with ASP.NET C
 
 ## MVP functionality
 - User registration and JWT login
+- JWT authentication stored in an HttpOnly cookie (not browser storage)
 - Seeded bookable resources
 - View resources
 - Create bookings with UTC timestamps
@@ -94,6 +95,8 @@ This is a learning MVP, not a production-certified reservation platform. Before 
 ## API overview
 - `POST /api/auth/register`
 - `POST /api/auth/login`
+- `GET /api/auth/me`
+- `POST /api/auth/logout`
 - `GET /api/resources`
 - `POST /api/resources` (Admin)
 - `POST /api/bookings`
@@ -104,14 +107,30 @@ This is a learning MVP, not a production-certified reservation platform. Before 
 
 Successful JSON responses use `{ "success": true, "message": "...", "data": ... }`. Errors use RFC Problem Details (`application/problem+json`) with a `traceId`; validation failures include an `errors` object. `204 No Content` is retained for successful booking cancellation.
 
+The browser never receives or stores the JWT in JavaScript. Login and registration
+set an HttpOnly, SameSite cookie (Secure outside development); the API validates
+the cookie on subsequent requests. The frontend restores sessions through
+`GET /api/auth/me` and clears the cookie through `POST /api/auth/logout`.
+
 ## Postman
 Import [`postman/SlotWise-Backend.postman_collection.json`](postman/SlotWise-Backend.postman_collection.json) and [`postman/SlotWise-Local.postman_environment.json`](postman/SlotWise-Local.postman_environment.json) into Postman, then select the **SlotWise Local** environment. Start the backend and SQL Server first.
 
-For regular user requests, run **Register user** (or **Login user**) to save a JWT automatically. For Admin-only requests, enter the local development admin password in the environment's `adminPassword` variable, then run **Login Admin**. The collection automatically picks a resource from **List active resources**, creates future UTC timestamps for booking and availability requests, and saves the created `bookingId`.
+For regular user requests, run **Register user** (or **Login user**); Postman stores and sends the HttpOnly cookie automatically. For Admin-only requests, enter the local development admin password in the environment's `adminPassword` variable, then run **Login Admin**. The collection automatically picks a resource from **List active resources**, creates future UTC timestamps for booking and availability requests, and saves the created `bookingId`.
 
 ## Project structure
 ```text
 backend/SlotWise.Api
+  Controllers/       HTTP routing, authorization, and response mapping
+  Services/          Application and booking/resource/authentication logic
+  Data/Repositories/ EF Core persistence queries and writes
+  Data/AppDbContext.cs  SQL Server ORM model and relationships
+  Models/            EF Core entities and Identity user
+  Dtos/              API request and response contracts
 frontend/src
 docs/requirements.md
 ```
+
+The backend uses ASP.NET Core MVC controllers, scoped service interfaces, and
+entity-specific repositories implemented with Entity Framework Core. Controllers
+depend on services rather than accessing the `AppDbContext` directly. ASP.NET
+Core Identity manages user and role persistence through its EF Core stores.

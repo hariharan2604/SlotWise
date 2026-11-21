@@ -2,18 +2,11 @@
   "info": {
     "_postman_id": "eb12a943-2f2c-4cfe-9d8c-ae104ca2d00a",
     "name": "SlotWise Backend API",
-    "description": "Backend API requests for authentication, resources, bookings, and availability. Login/register responses save the JWT into the active environment. Booking timestamps are generated as future UTC values before each request.",
+    "description": "Backend API requests for authentication, resources, bookings, and availability. Login/register responses set an HttpOnly session cookie that Postman sends automatically. Booking timestamps are generated as future UTC values before each request.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
-    "type": "bearer",
-    "bearer": [
-      {
-        "key": "token",
-        "value": "{{token}}",
-        "type": "string"
-      }
-    ]
+    "type": "noauth"
   },
   "event": [
     {
@@ -43,7 +36,6 @@
                 "exec": [
                   "if (pm.response.code === 200) {",
                   "  const body = pm.response.json().data;",
-                  "  pm.environment.set('token', body.token);",
                   "  pm.environment.set('userEmail', body.email);",
                   "}"
                 ]
@@ -81,7 +73,7 @@
                 "register"
               ]
             },
-            "description": "Creates a User account and stores the returned JWT in the active environment."
+            "description": "Creates a User account and receives the HttpOnly authentication cookie."
           },
           "response": []
         },
@@ -95,7 +87,6 @@
                 "exec": [
                   "if (pm.response.code === 200) {",
                   "  const body = pm.response.json().data;",
-                  "  pm.environment.set('token', body.token);",
                   "  pm.environment.set('userEmail', body.email);",
                   "  pm.environment.set('userRole', body.role);",
                   "}"
@@ -134,7 +125,7 @@
                 "login"
               ]
             },
-            "description": "Logs in the user created by Register user (or another user entered in the environment) and saves the JWT."
+            "description": "Logs in the user created by Register user (or another user entered in the environment); Postman stores the authentication cookie."
           },
           "response": []
         },
@@ -148,7 +139,6 @@
                 "exec": [
                   "if (pm.response.code === 200) {",
                   "  const body = pm.response.json().data;",
-                  "  pm.environment.set('token', body.token);",
                   "  pm.environment.set('userEmail', body.email);",
                   "  pm.environment.set('userRole', body.role);",
                   "}"
@@ -187,7 +177,7 @@
                 "login"
               ]
             },
-            "description": "Logs in with the local development admin account. Set adminPassword in the environment first; the returned JWT is saved automatically."
+            "description": "Logs in with the local development admin account. Set adminPassword in the environment first; Postman stores the authentication cookie."
           },
           "response": []
         }

@@ -9,7 +9,7 @@ namespace SlotWise.Api.Controllers;
 [ApiController]
 [Route("api/bookings")]
 [Authorize]
-public class BookingsController(BookingService bookings) : ControllerBase
+public class BookingsController(IBookingService bookings) : ControllerBase
 {
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 

@@ -1,56 +1,71 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
-using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 using SlotWise.Api.Dtos;
-using SlotWise.Api.Models;
+using SlotWise.Api.Security;
+using SlotWise.Api.Services;
 
 namespace SlotWise.Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
-public class AuthController(UserManager<ApplicationUser> users, IConfiguration config) : ControllerBase
+public class AuthController(IAuthService auth, IWebHostEnvironment environment) : ControllerBase
 {
     [HttpPost("register")]
-    public async Task<IActionResult> Register(RegisterRequest request)
+    public async Task<IActionResult> Register(RegisterRequest request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.DisplayName) || request.DisplayName.Length > 100)
-            return Problem(statusCode: StatusCodes.Status400BadRequest, title: "Bad Request",
-                detail: "A valid display name is required.");
-        var user = new ApplicationUser { UserName = request.Email, Email = request.Email, DisplayName = request.DisplayName.Trim() };
-        var result = await users.CreateAsync(user, request.Password);
-        if (!result.Succeeded)
-            return Problem(statusCode: StatusCodes.Status400BadRequest, title: "Bad Request",
-                detail: string.Join("; ", result.Errors.Select(e => e.Description)));
-        await users.AddToRoleAsync(user, "User");
-        return Ok(new ApiResponse<AuthResponse>(true, "Registration successful.", await CreateToken(user)));
+        var session = await auth.RegisterAsync(request, cancellationToken);
+        SetAuthCookie(session);
+        return Ok(new ApiResponse<AuthResponse>(true, "Registration successful.", session.User));
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login(LoginRequest request)
+    public async Task<IActionResult> Login(LoginRequest request, CancellationToken cancellationToken)
     {
-        var user = await users.FindByEmailAsync(request.Email);
-        if (user is null || !await users.CheckPasswordAsync(user, request.Password))
+        var session = await auth.LoginAsync(request, cancellationToken);
+        if (session is null)
             return Problem(statusCode: StatusCodes.Status401Unauthorized, title: "Unauthorized",
                 detail: "Invalid email or password.");
-        return Ok(new ApiResponse<AuthResponse>(true, "Login successful.", await CreateToken(user)));
+        SetAuthCookie(session);
+        return Ok(new ApiResponse<AuthResponse>(true, "Login successful.", session.User));
     }
 
-    private async Task<AuthResponse> CreateToken(ApplicationUser user)
+    [Authorize]
+    [HttpGet("me")]
+    public async Task<IActionResult> Me(CancellationToken cancellationToken)
     {
-        var roles = await users.GetRolesAsync(user);
-        var claims = new List<Claim> {
-            new(JwtRegisteredClaimNames.Sub, user.Id),
-            new(JwtRegisteredClaimNames.Email, user.Email ?? ""),
-            new(ClaimTypes.NameIdentifier, user.Id),
-            new(ClaimTypes.Name, user.DisplayName)
-        };
-        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]!));
-        var token = new JwtSecurityToken(config["Jwt:Issuer"], config["Jwt:Audience"], claims,
-            expires: DateTime.UtcNow.AddHours(3), signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
-        return new AuthResponse(new JwtSecurityTokenHandler().WriteToken(token), user.Email!, user.DisplayName, roles.FirstOrDefault() ?? "User");
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId is null)
+            return Unauthorized();
+        var user = await auth.GetCurrentUserAsync(userId, cancellationToken);
+        return user is null
+            ? Unauthorized()
+            : Ok(new ApiResponse<AuthResponse>(true, "Session retrieved successfully.", user));
+    }
+
+    [HttpPost("logout")]
+    public IActionResult Logout()
+    {
+        Response.Cookies.Delete(AuthCookieDefaults.Name, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = !environment.IsDevelopment(),
+            SameSite = SameSiteMode.Strict,
+            Path = "/"
+        });
+        return NoContent();
+    }
+
+    private void SetAuthCookie(AuthSession session)
+    {
+        Response.Cookies.Append(AuthCookieDefaults.Name, session.Token, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = !environment.IsDevelopment(),
+            SameSite = SameSiteMode.Strict,
+            Path = "/",
+            Expires = session.ExpiresAt,
+            IsEssential = true
+        });
     }
 }

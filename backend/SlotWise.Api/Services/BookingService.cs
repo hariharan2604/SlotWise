@@ -1,114 +1,125 @@
-using System.Data;
-using Microsoft.EntityFrameworkCore;
-using SlotWise.Api.Data;
+using Microsoft.AspNetCore.Identity;
+using SlotWise.Api.Data.Repositories;
 using SlotWise.Api.Dtos;
 using SlotWise.Api.Models;
 
 namespace SlotWise.Api.Services;
 
-public class BookingService(AppDbContext db)
+public sealed class BookingService(
+    IBookingRepository bookings,
+    UserManager<ApplicationUser> users) : IBookingService
 {
-    public async Task<BookingResponse> CreateAsync(string userId, CreateBookingRequest request, CancellationToken ct)
+    public async Task<BookingResponse> CreateAsync(
+        string userId,
+        CreateBookingRequest request,
+        CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(request.Purpose) || request.Purpose.Length > 300)
+            throw new ArgumentException("Purpose is required (maximum 300 characters).");
         if (request.Start.Offset != TimeSpan.Zero || request.End.Offset != TimeSpan.Zero)
             throw new ArgumentException("Send Start and End in UTC (ISO 8601 ending in Z).");
         ValidateInterval(request.Start, request.End);
-        var start = request.Start.UtcDateTime;
-        var end = request.End.UtcDateTime;
 
-        // Serializable isolation prevents two concurrent requests from both passing the overlap check.
-        // Keep the ResourceId/StartUtc/EndUtc index in AppDbContext for efficient range locking.
-        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
-        var resource = await db.Resources.SingleOrDefaultAsync(r => r.Id == request.ResourceId && r.IsActive, ct)
-            ?? throw new KeyNotFoundException("Resource not found or inactive.");
-
-        var overlaps = await db.Bookings.AnyAsync(b =>
-            b.ResourceId == request.ResourceId &&
-            b.Status == BookingStatus.Confirmed &&
-            b.StartUtc < end && b.EndUtc > start, ct);
-        if (overlaps) throw new InvalidOperationException("This resource is already booked for the selected time.");
-
-        var user = await db.Users.FindAsync([userId], ct);
-        var booking = new Booking {
-            ResourceId = resource.Id, UserId = userId, Purpose = request.Purpose.Trim(),
-            StartUtc = start, EndUtc = end, Status = BookingStatus.Confirmed
+        var booking = new Booking
+        {
+            ResourceId = request.ResourceId,
+            UserId = userId,
+            Purpose = request.Purpose.Trim(),
+            StartUtc = request.Start.UtcDateTime,
+            EndUtc = request.End.UtcDateTime,
+            Status = BookingStatus.Confirmed
         };
-        db.Bookings.Add(booking);
-        await db.SaveChangesAsync(ct);
-        await tx.CommitAsync(ct);
-        return new BookingResponse(booking.Id, resource.Id, resource.Name, booking.Purpose,
-            booking.StartUtc, booking.EndUtc, booking.Status.ToString(), user?.DisplayName ?? "");
+        var createdBooking = await bookings.CreateIfAvailableAsync(booking, cancellationToken)
+            ?? throw new InvalidOperationException("This resource is already booked for the selected time.");
+        var user = await users.FindByIdAsync(userId);
+
+        return ToResponse(createdBooking, user?.DisplayName ?? "");
     }
 
-    public async Task<List<BookingResponse>> ForUserAsync(string userId, CancellationToken ct)
+    public async Task<IReadOnlyList<BookingResponse>> ForUserAsync(
+        string userId,
+        CancellationToken cancellationToken)
     {
-        var bookings = await db.Bookings.AsNoTracking().Where(b => b.UserId == userId)
-            .OrderByDescending(b => b.StartUtc)
-            .Select(b => new BookingResponse(b.Id, b.ResourceId, b.Resource!.Name, b.Purpose,
-                b.StartUtc, b.EndUtc, b.Status.ToString(), b.User!.DisplayName))
-            .ToListAsync(ct);
-        return bookings.Select(WithUtcTimestamps).ToList();
+        var results = await bookings.GetForUserAsync(userId, cancellationToken);
+        return results.Select(booking => ToResponse(booking, booking.User?.DisplayName ?? "")).ToList();
     }
 
-    public async Task<List<BookingResponse>> AllAsync(CancellationToken ct)
+    public async Task<IReadOnlyList<BookingResponse>> AllAsync(CancellationToken cancellationToken)
     {
-        var bookings = await db.Bookings.AsNoTracking().OrderByDescending(b => b.StartUtc)
-            .Select(b => new BookingResponse(b.Id, b.ResourceId, b.Resource!.Name, b.Purpose,
-                b.StartUtc, b.EndUtc, b.Status.ToString(), b.User!.DisplayName))
-            .ToListAsync(ct);
-        return bookings.Select(WithUtcTimestamps).ToList();
+        var results = await bookings.GetAllAsync(cancellationToken);
+        return results.Select(booking => ToResponse(booking, booking.User?.DisplayName ?? "")).ToList();
     }
 
-    private static BookingResponse WithUtcTimestamps(BookingResponse booking) => booking with
+    public async Task CancelAsync(
+        int id,
+        string userId,
+        bool isAdmin,
+        CancellationToken cancellationToken)
     {
-        StartUtc = DateTime.SpecifyKind(booking.StartUtc, DateTimeKind.Utc),
-        EndUtc = DateTime.SpecifyKind(booking.EndUtc, DateTimeKind.Utc)
-    };
-
-    public async Task CancelAsync(int id, string userId, bool isAdmin, CancellationToken ct)
-    {
-        var booking = await db.Bookings.SingleOrDefaultAsync(b => b.Id == id, ct)
+        var booking = await bookings.GetByIdAsync(id, cancellationToken)
             ?? throw new KeyNotFoundException("Booking not found.");
-        if (!isAdmin && booking.UserId != userId) throw new UnauthorizedAccessException("You can only cancel your own bookings.");
-        if (booking.Status == BookingStatus.Cancelled) return;
-        if (booking.StartUtc <= DateTime.UtcNow) throw new InvalidOperationException("Started bookings cannot be cancelled.");
+        if (!isAdmin && booking.UserId != userId)
+            throw new UnauthorizedAccessException("You can only cancel your own bookings.");
+        if (booking.Status == BookingStatus.Cancelled)
+            return;
+        if (booking.StartUtc <= DateTime.UtcNow)
+            throw new InvalidOperationException("Started bookings cannot be cancelled.");
+
         booking.Status = BookingStatus.Cancelled;
         booking.CancelledAtUtc = DateTime.UtcNow;
-        await db.SaveChangesAsync(ct);
+        await bookings.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<bool> IsAvailableAsync(int resourceId, DateTimeOffset start, DateTimeOffset end, CancellationToken ct)
+    public async Task<bool> IsAvailableAsync(
+        int resourceId,
+        DateTimeOffset start,
+        DateTimeOffset end,
+        CancellationToken cancellationToken)
     {
-        if (resourceId <= 0) throw new ArgumentException("A valid resource is required.");
+        if (resourceId <= 0)
+            throw new ArgumentException("A valid resource is required.");
         ValidateInterval(start, end);
-        var resourceIsActive = await db.Resources.AnyAsync(r => r.Id == resourceId && r.IsActive, ct);
-        if (!resourceIsActive) throw new KeyNotFoundException("Resource not found or inactive.");
 
-        var exists = await db.Bookings.AnyAsync(b => b.ResourceId == resourceId &&
-            b.Status == BookingStatus.Confirmed && b.StartUtc < end.UtcDateTime && b.EndUtc > start.UtcDateTime, ct);
-        return !exists;
+        if (!await bookings.HasActiveResourceAsync(resourceId, cancellationToken))
+            throw new KeyNotFoundException("Resource not found or inactive.");
+
+        return !await bookings.HasConfirmedOverlapAsync(
+            resourceId,
+            start.UtcDateTime,
+            end.UtcDateTime,
+            cancellationToken);
     }
 
-    public async Task<List<int>> AvailableResourceIdsAsync(DateTimeOffset start, DateTimeOffset end, CancellationToken ct)
+    public async Task<IReadOnlyList<int>> AvailableResourceIdsAsync(
+        DateTimeOffset start,
+        DateTimeOffset end,
+        CancellationToken cancellationToken)
     {
         ValidateInterval(start, end);
-        var startUtc = start.UtcDateTime;
-        var endUtc = end.UtcDateTime;
-
-        return await db.Resources.AsNoTracking()
-            .Where(r => r.IsActive && !db.Bookings.Any(b =>
-                b.ResourceId == r.Id &&
-                b.Status == BookingStatus.Confirmed &&
-                b.StartUtc < endUtc && b.EndUtc > startUtc))
-            .OrderBy(r => r.Name)
-            .Select(r => r.Id)
-            .ToListAsync(ct);
+        return await bookings.GetAvailableResourceIdsAsync(
+            start.UtcDateTime,
+            end.UtcDateTime,
+            cancellationToken);
     }
+
+    private static BookingResponse ToResponse(Booking booking, string bookedBy) =>
+        new(
+            booking.Id,
+            booking.ResourceId,
+            booking.Resource!.Name,
+            booking.Purpose,
+            DateTime.SpecifyKind(booking.StartUtc, DateTimeKind.Utc),
+            DateTime.SpecifyKind(booking.EndUtc, DateTimeKind.Utc),
+            booking.Status.ToString(),
+            bookedBy);
 
     private static void ValidateInterval(DateTimeOffset start, DateTimeOffset end)
     {
-        if (end <= start) throw new ArgumentException("End time must be after start time.");
-        if (start <= DateTimeOffset.UtcNow) throw new ArgumentException("Bookings must start in the future.");
-        if ((end - start) > TimeSpan.FromHours(12)) throw new ArgumentException("A booking cannot exceed 12 hours.");
+        if (end <= start)
+            throw new ArgumentException("End time must be after start time.");
+        if (start <= DateTimeOffset.UtcNow)
+            throw new ArgumentException("Bookings must start in the future.");
+        if ((end - start) > TimeSpan.FromHours(12))
+            throw new ArgumentException("A booking cannot exceed 12 hours.");
     }
 }

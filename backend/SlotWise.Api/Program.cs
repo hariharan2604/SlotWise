@@ -5,8 +5,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SlotWise.Api.Data;
+using SlotWise.Api.Data.Repositories;
 using SlotWise.Api.Middleware;
 using SlotWise.Api.Models;
+using SlotWise.Api.Security;
 using SlotWise.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -41,6 +43,15 @@ var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationExcep
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (string.IsNullOrEmpty(context.Token))
+                    context.Token = context.Request.Cookies[AuthCookieDefaults.Name];
+                return Task.CompletedTask;
+            }
+        };
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true, ValidateAudience = true, ValidateLifetime = true,
@@ -52,7 +63,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 builder.Services.AddAuthorization();
-builder.Services.AddScoped<BookingService>();
+builder.Services.AddScoped<IBookingRepository, BookingRepository>();
+builder.Services.AddScoped<IResourceRepository, ResourceRepository>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<IResourceService, ResourceService>();
 var frontendOrigins = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
 {
     builder.Configuration["FrontendOrigin"] ?? "http://localhost:5173"
@@ -63,7 +78,7 @@ if (builder.Environment.IsDevelopment())
     frontendOrigins.Add("http://127.0.0.1:5173");
 }
 builder.Services.AddCors(options => options.AddPolicy("frontend", p =>
-    p.WithOrigins(frontendOrigins.ToArray()).AllowAnyHeader().AllowAnyMethod()));
+    p.WithOrigins(frontendOrigins.ToArray()).AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
 
 var app = builder.Build();
 app.UseExceptionHandler();

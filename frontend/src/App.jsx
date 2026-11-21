@@ -1,32 +1,42 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { Box, CircularProgress } from '@mui/material'
 import Login from './components/Login'
 import Dashboard from './components/Dashboard'
+import { api } from './api'
 
 export default function App() {
-  const [auth, setAuth] = useState(() => {
-    const token = localStorage.getItem('slotwise_token')
-    const email = localStorage.getItem('slotwise_email')
-    const displayName = localStorage.getItem('slotwise_name')
-    const role = localStorage.getItem('slotwise_role')
-    return token && email && displayName && role ? { token, email, displayName, role } : null
-  })
+  const [auth, setAuth] = useState(null)
+  const [sessionChecked, setSessionChecked] = useState(false)
   const navigate = useNavigate()
 
+  useEffect(() => {
+    let active = true
+    localStorage.removeItem('slotwise_token')
+    api.get('/auth/me')
+      .then(({ data }) => { if (active) setAuth(data) })
+      .catch(() => { if (active) setAuth(null) })
+      .finally(() => { if (active) setSessionChecked(true) })
+    return () => { active = false }
+  }, [])
+
   const login = (value) => {
-    localStorage.setItem('slotwise_token', value.token)
-    localStorage.setItem('slotwise_email', value.email)
-    localStorage.setItem('slotwise_name', value.displayName)
-    localStorage.setItem('slotwise_role', value.role)
     setAuth(value)
     navigate('/')
   }
 
-  const logout = () => {
-    for (const key of ['slotwise_token', 'slotwise_email', 'slotwise_name', 'slotwise_role']) localStorage.removeItem(key)
-    setAuth(null)
-    navigate('/login')
+  const logout = async () => {
+    try {
+      await api.post('/auth/logout')
+    } catch (error) {
+      console.error('Could not clear the server session.', error)
+    } finally {
+      setAuth(null)
+      navigate('/login')
+    }
   }
+
+  if (!sessionChecked) return <Box sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}><CircularProgress /></Box>
 
   return <Routes>
     <Route path="/login" element={auth ? <Navigate to="/" replace /> : <Login onLogin={login} />} />
