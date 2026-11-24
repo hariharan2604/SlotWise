@@ -25,4 +25,16 @@ public class ResourcesController(IResourceService resources) : ControllerBase
         return Created("/api/resources",
             new ApiResponse<ResourceResponse>(true, "Resource created successfully.", response));
     }
+
+    [HttpPut("{id:int}/office-location")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> AssignOffice(
+        int id,
+        UpdateResourceOfficeRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await resources.AssignOfficeAsync(
+            id, request.OfficeLocationId, request.ExistingBookingsAction, cancellationToken);
+        return Ok(new ApiResponse<ResourceResponse>(true, "Resource office assignment updated successfully.", response));
+    }
 }

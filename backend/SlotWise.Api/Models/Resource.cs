@@ -9,5 +9,7 @@ public class Resource
     public int Capacity { get; set; } = 1;
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    public int? OfficeLocationId { get; set; }
+    public OfficeLocation? OfficeLocation { get; set; }
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
 }

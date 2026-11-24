@@ -12,8 +12,11 @@ public sealed class BookingRepository(AppDbContext db) : IBookingRepository
             IsolationLevel.Serializable,
             cancellationToken);
 
-        var resource = await db.Resources.SingleOrDefaultAsync(
-            item => item.Id == booking.ResourceId && item.IsActive,
+        var resource = await db.Resources
+            .Include(item => item.OfficeLocation)
+            .SingleOrDefaultAsync(
+            item => item.Id == booking.ResourceId && item.IsActive &&
+                (!item.OfficeLocationId.HasValue || item.OfficeLocation!.IsActive),
             cancellationToken)
             ?? throw new KeyNotFoundException("Resource not found or inactive.");
 
@@ -38,6 +41,7 @@ public sealed class BookingRepository(AppDbContext db) : IBookingRepository
         CancellationToken cancellationToken) =>
         await db.Bookings.AsNoTracking()
             .Include(booking => booking.Resource)
+                .ThenInclude(resource => resource!.OfficeLocation)
             .Include(booking => booking.User)
             .Where(booking => booking.UserId == userId)
             .OrderByDescending(booking => booking.StartUtc)
@@ -46,6 +50,7 @@ public sealed class BookingRepository(AppDbContext db) : IBookingRepository
     public async Task<IReadOnlyList<Booking>> GetAllAsync(CancellationToken cancellationToken) =>
         await db.Bookings.AsNoTracking()
             .Include(booking => booking.Resource)
+                .ThenInclude(resource => resource!.OfficeLocation)
             .Include(booking => booking.User)
             .OrderByDescending(booking => booking.StartUtc)
             .ToListAsync(cancellationToken);
@@ -55,7 +60,8 @@ public sealed class BookingRepository(AppDbContext db) : IBookingRepository
 
     public Task<bool> HasActiveResourceAsync(int resourceId, CancellationToken cancellationToken) =>
         db.Resources.AnyAsync(
-            resource => resource.Id == resourceId && resource.IsActive,
+            resource => resource.Id == resourceId && resource.IsActive &&
+                (!resource.OfficeLocationId.HasValue || resource.OfficeLocation!.IsActive),
             cancellationToken);
 
     public Task<bool> HasConfirmedOverlapAsync(
@@ -75,7 +81,9 @@ public sealed class BookingRepository(AppDbContext db) : IBookingRepository
         DateTime endUtc,
         CancellationToken cancellationToken) =>
         await db.Resources.AsNoTracking()
-            .Where(resource => resource.IsActive && !db.Bookings.Any(booking =>
+            .Where(resource => resource.IsActive &&
+                (!resource.OfficeLocationId.HasValue || resource.OfficeLocation!.IsActive) &&
+                !db.Bookings.Any(booking =>
                 booking.ResourceId == resource.Id &&
                 booking.Status == BookingStatus.Confirmed &&
                 booking.StartUtc < endUtc &&

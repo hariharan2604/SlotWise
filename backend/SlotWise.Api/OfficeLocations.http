@@ -1,0 +1,57 @@
+@baseUrl = http://localhost:5080
+@officeId = 1
+# Sign in first through the frontend or Swagger so the auth cookie is available.
+
+### List active office locations (Admins also see inactive locations)
+GET {{baseUrl}}/api/office-locations
+
+### Get an office location by ID
+GET {{baseUrl}}/api/office-locations/{{officeId}}
+
+### Create an office location (Admin)
+POST {{baseUrl}}/api/office-locations
+Content-Type: application/json
+
+{
+  "name": "North Office",
+  "address": "100 Main Street",
+  "city": "Example City",
+  "state": "Example State",
+  "country": "Example Country",
+  "latitude": 40.7128,
+  "longitude": -74.006,
+  "description": "Downtown office"
+}
+
+### Update an office location (Admin)
+PUT {{baseUrl}}/api/office-locations/{{officeId}}
+Content-Type: application/json
+
+{
+  "name": "North Office",
+  "address": "100 Main Street",
+  "city": "Example City",
+  "state": "Example State",
+  "country": "Example Country",
+  "latitude": 40.7128,
+  "longitude": -74.006,
+  "description": "Updated office details",
+  "isActive": true
+}
+
+### Deactivate an office location (Admin)
+DELETE {{baseUrl}}/api/office-locations/{{officeId}}
+
+### Assign a resource to an active office (Admin; send null to remove assignment)
+PUT {{baseUrl}}/api/resources/1/office-location
+Content-Type: application/json
+
+{
+  "officeLocationId": {{officeId}}
+}
+
+### List active resources at an office
+GET {{baseUrl}}/api/office-locations/{{officeId}}/resources
+
+### Check office resource availability
+GET {{baseUrl}}/api/office-locations/{{officeId}}/resources/availability?start=2030-01-01T10:00:00Z&end=2030-01-01T11:00:00Z

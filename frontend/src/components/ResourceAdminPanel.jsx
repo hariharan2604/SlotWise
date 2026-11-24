@@ -1,16 +1,61 @@
 import { useState } from 'react'
-import { Alert, Box, Button, Card, CardContent, CircularProgress, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, Card, CardContent, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Stack, TextField, Typography } from '@mui/material'
 import { api, errorMessage } from '../api'
 import UiIcon from './UiIcon'
 
-export default function ResourceAdminPanel({ onCreated }) {
+export default function ResourceAdminPanel({ offices, resources, bookings, onCreated, onAssignmentChanged }) {
   const [savingResource, setSavingResource] = useState(false)
   const [resourceName, setResourceName] = useState('')
   const [resourceDescription, setResourceDescription] = useState('')
   const [resourceLocation, setResourceLocation] = useState('')
   const [resourceCapacity, setResourceCapacity] = useState('1')
+  const [resourceOfficeId, setResourceOfficeId] = useState('')
+  const [assignments, setAssignments] = useState({})
+  const [savingAssignmentId, setSavingAssignmentId] = useState(null)
   const [fieldErrors, setFieldErrors] = useState({})
   const [formError, setFormError] = useState('')
+  const [bookingDecision, setBookingDecision] = useState(null)
+
+  const assignResource = async (resource, officeLocationId, existingBookingsAction = null) => {
+    setFormError('')
+    setSavingAssignmentId(resource.id)
+    try {
+      await api.put(`/resources/${resource.id}/office-location`, {
+        officeLocationId,
+        existingBookingsAction
+      })
+      setBookingDecision(null)
+      await onAssignmentChanged()
+    } catch (e) {
+      setFormError(errorMessage(e))
+    } finally {
+      setSavingAssignmentId(null)
+    }
+  }
+
+  const requestOfficeAssignment = async (resource) => {
+    const selected = assignments[resource.id] ?? String(resource.officeLocationId ?? '')
+    const officeLocationId = selected === '' ? null : Number(selected)
+    if (officeLocationId === resource.officeLocationId) return
+
+    const futureBookingCount = bookings.filter((booking) =>
+      booking.resourceId === resource.id &&
+      booking.status === 'Confirmed' &&
+      new Date(booking.startUtc).getTime() > Date.now()
+    ).length
+
+    if (futureBookingCount > 0) {
+      setBookingDecision({
+        resource,
+        officeLocationId,
+        futureBookingCount,
+        officeName: offices.find((office) => office.id === officeLocationId)?.name ?? null
+      })
+      return
+    }
+
+    await assignResource(resource, officeLocationId)
+  }
 
   const createResource = async () => {
     setFormError('')
@@ -33,12 +78,14 @@ export default function ResourceAdminPanel({ onCreated }) {
         name: resourceName.trim(),
         description: resourceDescription.trim(),
         location: resourceLocation.trim(),
-        capacity
+        capacity,
+        officeLocationId: resourceOfficeId ? Number(resourceOfficeId) : null
       })
       setResourceName('')
       setResourceDescription('')
       setResourceLocation('')
       setResourceCapacity('1')
+      setResourceOfficeId('')
       await onCreated()
     } catch (e) {
       setFormError(errorMessage(e))
@@ -59,10 +106,65 @@ export default function ResourceAdminPanel({ onCreated }) {
         <TextField label="A short description" value={resourceDescription} onChange={e => { setResourceDescription(e.target.value); setFieldErrors(previous => ({ ...previous, description: '' })) }} error={Boolean(fieldErrors.description)} helperText={fieldErrors.description} inputProps={{ maxLength: 500 }} multiline minRows={3} />
         <TextField label="Where can we find it?" value={resourceLocation} onChange={e => { setResourceLocation(e.target.value); setFieldErrors(previous => ({ ...previous, location: '' })) }} error={Boolean(fieldErrors.location)} helperText={fieldErrors.location} inputProps={{ maxLength: 150 }} />
         <TextField label="Capacity" type="number" value={resourceCapacity} onChange={e => { setResourceCapacity(e.target.value); setFieldErrors(previous => ({ ...previous, capacity: '' })) }} error={Boolean(fieldErrors.capacity)} helperText={fieldErrors.capacity} inputProps={{ min: 1, step: 1 }} required />
+        <TextField select label="Office location" value={resourceOfficeId} onChange={e => setResourceOfficeId(e.target.value)}>
+          <MenuItem value="">Not assigned to an office</MenuItem>
+          {offices.filter(office => office.isActive).map(office => <MenuItem key={office.id} value={office.id}>{office.name}</MenuItem>)}
+        </TextField>
         <Button variant="contained" onClick={createResource} disabled={savingResource} endIcon={!savingResource && <UiIcon name="arrow" size={17} />} sx={{ mt: .5, bgcolor: '#24543f', '&:hover': { bgcolor: '#193d2d' } }}>
           {savingResource ? <CircularProgress size={22} color="inherit" /> : 'Add resource'}
         </Button>
       </Stack>
+      <Box sx={{ mt: 3, pt: 2.5, borderTop: '1px solid #efeee7' }}>
+        <Typography fontWeight={700} sx={{ mb: 1 }}>Assign existing resources</Typography>
+        <Stack spacing={1}>
+          {resources.map((resource) => <Stack key={resource.id} direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
+            <Typography variant="body2" sx={{ flex: 1 }}>{resource.name}</Typography>
+            <TextField select size="small" label="Office" value={assignments[resource.id] ?? String(resource.officeLocationId ?? '')}
+              onChange={(event) => setAssignments(current => ({ ...current, [resource.id]: event.target.value }))} sx={{ minWidth: 180 }}>
+              <MenuItem value="">No office</MenuItem>
+              {offices.filter(office => office.isActive).map(office => <MenuItem key={office.id} value={String(office.id)}>{office.name}</MenuItem>)}
+            </TextField>
+            <Button size="small" disabled={savingAssignmentId === resource.id}
+              onClick={() => requestOfficeAssignment(resource)}>
+              {savingAssignmentId === resource.id ? <CircularProgress size={18} /> : 'Save'}
+            </Button>
+          </Stack>)}
+        </Stack>
+      </Box>
     </CardContent>
+    <Dialog open={Boolean(bookingDecision)} onClose={() => {
+      if (savingAssignmentId === null) setBookingDecision(null)
+    }}>
+      <DialogTitle>Existing bookings for {bookingDecision?.resource.name}</DialogTitle>
+      <DialogContent>
+        <Typography>
+          This resource has {bookingDecision?.futureBookingCount} future confirmed booking(s).
+          {bookingDecision?.officeName
+            ? ` Its new office will be ${bookingDecision.officeName}.`
+            : ' It will no longer be assigned to an office.'}
+          Choose how to handle those bookings.
+        </Typography>
+        {formError && <Alert severity="error" sx={{ mt: 2 }} onClose={() => setFormError('')}>{formError}</Alert>}
+      </DialogContent>
+      <DialogActions sx={{ flexWrap: 'wrap', p: 2 }}>
+        <Button onClick={() => setBookingDecision(null)} disabled={savingAssignmentId !== null}>Keep current office</Button>
+        <Button
+          color="error"
+          disabled={savingAssignmentId !== null}
+          onClick={() => assignResource(bookingDecision.resource, bookingDecision.officeLocationId, 'Cancel')}
+        >
+          Cancel affected bookings
+        </Button>
+        <Button
+          variant="contained"
+          disabled={savingAssignmentId !== null}
+          onClick={() => assignResource(bookingDecision.resource, bookingDecision.officeLocationId, 'MoveWithResource')}
+        >
+          {savingAssignmentId === bookingDecision?.resource.id
+            ? <CircularProgress size={18} color="inherit" />
+            : 'Move bookings with resource'}
+        </Button>
+      </DialogActions>
+    </Dialog>
   </Card>
 }

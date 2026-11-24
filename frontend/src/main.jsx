@@ -5,6 +5,8 @@ import { CssBaseline, ThemeProvider, createTheme } from '@mui/material'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import { enGB } from 'date-fns/locale'
+import 'leaflet/dist/leaflet.css'
+import './officeLocations.css'
 import App from './App'
 const theme = createTheme({
   palette: {

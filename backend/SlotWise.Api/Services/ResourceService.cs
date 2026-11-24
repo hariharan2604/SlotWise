@@ -16,7 +16,8 @@ public sealed class ResourceService(IResourceRepository resources) : IResourceSe
                 resource.Description,
                 resource.Location,
                 resource.Capacity,
-                resource.IsActive))
+                resource.IsActive,
+                resource.OfficeLocationId))
             .ToList();
     }
 
@@ -35,13 +36,17 @@ public sealed class ResourceService(IResourceRepository resources) : IResourceSe
             throw new ArgumentException("Location cannot exceed 150 characters.");
         if (request.Capacity < 1)
             throw new ArgumentException("Capacity must be a positive number.");
+        if (request.OfficeLocationId.HasValue &&
+            await resources.GetActiveOfficeAsync(request.OfficeLocationId.Value, cancellationToken) is null)
+            throw new ArgumentException("The selected office location does not exist or is inactive.");
 
         var resource = new Resource
         {
             Name = name,
             Description = description,
             Location = location,
-            Capacity = request.Capacity
+            Capacity = request.Capacity,
+            OfficeLocationId = request.OfficeLocationId
         };
         await resources.AddAsync(resource, cancellationToken);
 
@@ -51,6 +56,28 @@ public sealed class ResourceService(IResourceRepository resources) : IResourceSe
             resource.Description,
             resource.Location,
             resource.Capacity,
-            resource.IsActive);
+            resource.IsActive,
+            resource.OfficeLocationId);
+    }
+
+    public async Task<ResourceResponse> AssignOfficeAsync(
+        int resourceId,
+        int? officeLocationId,
+        ExistingBookingOfficeChange? existingBookingsAction,
+        CancellationToken cancellationToken)
+    {
+        if (officeLocationId.HasValue &&
+            await resources.GetActiveOfficeAsync(officeLocationId.Value, cancellationToken) is null)
+            throw new ArgumentException("The selected office location does not exist or is inactive.");
+
+        var resource = await resources.AssignOfficeAsync(
+            resourceId,
+            officeLocationId,
+            existingBookingsAction,
+            DateTime.UtcNow,
+            cancellationToken)
+            ?? throw new KeyNotFoundException("Resource not found.");
+        return new ResourceResponse(resource.Id, resource.Name, resource.Description, resource.Location,
+            resource.Capacity, resource.IsActive, resource.OfficeLocationId);
     }
 }

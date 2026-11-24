@@ -1,6 +1,7 @@
 namespace SlotWise.Api.Models;
 
 public enum BookingStatus { Confirmed = 1, Cancelled = 2 }
+public enum ExistingBookingOfficeChange { MoveWithResource, Cancel }
 
 public class Booking
 {

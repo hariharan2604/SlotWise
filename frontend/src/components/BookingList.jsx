@@ -33,6 +33,9 @@ export default function BookingList({ bookings, onCancel }) {
                   <Chip size="small" label={booking.status} color={booking.status === 'Confirmed' ? 'success' : 'default'} />
                 </Stack>
                 <Typography sx={{ mt: .45, fontSize: 12, color: '#77796f' }}>{booking.purpose || 'Workspace reservation'}</Typography>
+                {booking.officeLocationName && <Typography sx={{ mt: .45, fontSize: 11, color: '#77796f' }}>
+                  Office: {booking.officeLocationName}
+                </Typography>}
                 {booking.bookedBy && <Typography sx={{ mt: .45, fontSize: 11, color: '#92938a' }}>Reserved by {booking.bookedBy}</Typography>}
               </Box>
             </Stack>

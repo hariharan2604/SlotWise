@@ -68,6 +68,8 @@ builder.Services.AddScoped<IResourceRepository, ResourceRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IResourceService, ResourceService>();
+builder.Services.AddScoped<IOfficeLocationRepository, OfficeLocationRepository>();
+builder.Services.AddScoped<IOfficeLocationService, OfficeLocationService>();
 var frontendOrigins = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
 {
     builder.Configuration["FrontendOrigin"] ?? "http://localhost:5173"
@@ -96,6 +98,50 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.EnsureCreatedAsync();
+    await db.Database.ExecuteSqlRawAsync("""
+        IF OBJECT_ID(N'[dbo].[OfficeLocations]', N'U') IS NULL
+        BEGIN
+            CREATE TABLE [dbo].[OfficeLocations] (
+                [Id] int NOT NULL IDENTITY,
+                [Name] nvarchar(120) NOT NULL,
+                [Address] nvarchar(250) NOT NULL,
+                [City] nvarchar(120) NOT NULL,
+                [State] nvarchar(120) NULL,
+                [Country] nvarchar(120) NOT NULL,
+                [Latitude] decimal(9,6) NOT NULL,
+                [Longitude] decimal(9,6) NOT NULL,
+                [Description] nvarchar(1000) NULL,
+                [IsActive] bit NOT NULL,
+                [CreatedAt] datetime2 NOT NULL,
+                [UpdatedAt] datetime2 NULL,
+                CONSTRAINT [PK_OfficeLocations] PRIMARY KEY ([Id]),
+                CONSTRAINT [CK_OfficeLocations_Latitude] CHECK ([Latitude] >= -90 AND [Latitude] <= 90),
+                CONSTRAINT [CK_OfficeLocations_Longitude] CHECK ([Longitude] >= -180 AND [Longitude] <= 180)
+            );
+            CREATE INDEX [IX_OfficeLocations_IsActive_Name] ON [dbo].[OfficeLocations] ([IsActive], [Name]);
+        END;
+
+        IF COL_LENGTH(N'[dbo].[Resources]', N'OfficeLocationId') IS NULL
+            ALTER TABLE [dbo].[Resources] ADD [OfficeLocationId] int NULL;
+
+        IF NOT EXISTS (
+            SELECT 1 FROM sys.foreign_keys
+            WHERE name = N'FK_Resources_OfficeLocations_OfficeLocationId'
+        )
+        BEGIN
+            ALTER TABLE [dbo].[Resources]
+            ADD CONSTRAINT [FK_Resources_OfficeLocations_OfficeLocationId]
+            FOREIGN KEY ([OfficeLocationId]) REFERENCES [dbo].[OfficeLocations] ([Id])
+            ON DELETE NO ACTION;
+        END;
+
+        IF NOT EXISTS (
+            SELECT 1 FROM sys.indexes
+            WHERE name = N'IX_Resources_OfficeLocationId' AND object_id = OBJECT_ID(N'[dbo].[Resources]')
+        )
+            CREATE INDEX [IX_Resources_OfficeLocationId]
+            ON [dbo].[Resources] ([OfficeLocationId]);
+        """);
     var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     foreach (var role in new[] { "Admin", "User" })
         if (!await roles.RoleExistsAsync(role)) await roles.CreateAsync(new IdentityRole(role));

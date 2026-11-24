@@ -12,6 +12,8 @@ SlotWise is a small full-stack resource booking application built with ASP.NET C
 - View own booking history
 - Cancel future bookings
 - Admin-only resource creation and all-bookings view
+- Admin-managed office locations with an OpenStreetMap-powered discovery map
+- Office-specific resource discovery, availability checks, and directions
 
 ## Prerequisites
 - .NET 10 SDK
@@ -49,13 +51,12 @@ Development seed admin:
 
 Change these values before using the application outside a local demo. Configure with environment variables or user secrets rather than committing secrets.
 
-The backend currently uses `EnsureCreated` for quick local startup. For a maintained deployment, replace this with EF Core migrations:
+The backend currently uses `EnsureCreated` for quick local startup. The repository includes an `InitialCreate` EF migration for new databases. For a maintained deployment, back up the database, apply the migration to an empty database, and replace `EnsureCreated` with the reviewed migration workflow:
 ```bash
 dotnet tool install --global dotnet-ef
-dotnet ef migrations add InitialCreate
 dotnet ef database update
 ```
-Then remove `EnsureCreated` from startup and use migrations.
+For a database previously created by this app's `EnsureCreated` startup, apply [`UpgradeEnsureCreatedDatabase.sql`](backend/SlotWise.Api/Data/Migrations/UpgradeEnsureCreatedDatabase.sql) after taking a backup. It adds the office schema and records the existing schema as the initial migration baseline, preserving existing resources and bookings. Then use `dotnet ef database update` for later migrations.
 
 ## Run frontend
 In a second terminal:
@@ -80,6 +81,13 @@ VITE_API_URL=http://localhost:5080/api
 - Cancelled bookings do not block availability.
 - Users can cancel only their own future bookings; Admin can cancel any future booking.
 
+## Office locations and map
+Admins can add or update office locations under **Manage workspace**, entering latitude and longitude manually or using browser geolocation to fill the coordinates, and associate resources with an active office. Employees can select **Office locations** to view active offices, their resources, and resource availability before booking. When an admin changes a resource's office and it has future confirmed bookings, the admin must choose to move those bookings with the resource or cancel them. Booking views show the resource's current office. Office deactivation hides the office and its associated resources from employee discovery and prevents new bookings, while preserving existing bookings.
+
+The map uses Leaflet and OpenStreetMap data/tiles without an API key. Tile requests use `tile.openstreetmap.org` with visible attribution; the public OSM tile service has a usage policy and is not an unlimited production tile CDN. Review https://operations.osmfoundation.org/policies/tiles/ before deployment and use a compliant provider or self-hosted tiles if production traffic requires it. Directions open OpenStreetMap in a new tab; no routing API or geocoding service is used.
+
+Office API requests are documented in [`backend/SlotWise.Api/OfficeLocations.http`](backend/SlotWise.Api/OfficeLocations.http). Office listing and resource discovery require authentication; office create, update, and deactivation require the Admin role. Resource `OfficeLocationId` is optional to preserve compatibility with existing resources; when supplied it must reference an active office.
+
 ## Important production hardening
 This is a learning MVP, not a production-certified reservation platform. Before production:
 1. Move JWT and database secrets to a secret manager/environment variables.
@@ -99,6 +107,14 @@ This is a learning MVP, not a production-certified reservation platform. Before 
 - `POST /api/auth/logout`
 - `GET /api/resources`
 - `POST /api/resources` (Admin)
+- `PUT /api/resources/{id}/office-location` (Admin)
+- `GET /api/office-locations`
+- `GET /api/office-locations/{id}`
+- `POST /api/office-locations` (Admin)
+- `PUT /api/office-locations/{id}` (Admin)
+- `DELETE /api/office-locations/{id}` (Admin; deactivates)
+- `GET /api/office-locations/{id}/resources`
+- `GET /api/office-locations/{id}/resources/availability?start=...&end=...`
 - `POST /api/bookings`
 - `GET /api/bookings/mine`
 - `GET /api/bookings` (Admin)

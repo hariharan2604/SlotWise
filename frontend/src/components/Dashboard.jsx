@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import {
   Alert, Avatar, Box, Button, CircularProgress, Drawer, Grid, IconButton, Snackbar, Stack, Typography
 } from '@mui/material'
@@ -7,12 +7,16 @@ import BookingList from './BookingList'
 import BookingDialog from './BookingDialog'
 import OverviewPanel from './OverviewPanel'
 import ResourceAdminPanel from './ResourceAdminPanel'
+import OfficeLocationForm from './OfficeLocationForm'
 import UiIcon from './UiIcon'
+
+const OfficeLocationsPage = lazy(() => import('./OfficeLocationsPage'))
 
 export default function Dashboard({ auth, onLogout }) {
   const isAdmin = auth.role === 'Admin'
   const [view, setView] = useState('overview')
   const [resources, setResources] = useState([])
+  const [offices, setOffices] = useState([])
   const [bookings, setBookings] = useState([])
   const [allBookings, setAllBookings] = useState([])
   const [loading, setLoading] = useState(true)
@@ -24,14 +28,16 @@ export default function Dashboard({ auth, onLogout }) {
   const [initialEnd, setInitialEnd] = useState('')
 
   const load = async () => {
-    const [resourceResponse, myBookingResponse, allBookingResponse] = await Promise.all([
+    const [resourceResponse, myBookingResponse, allBookingResponse, officeResponse] = await Promise.all([
       api.get('/resources'),
       api.get('/bookings/mine'),
-      isAdmin ? api.get('/bookings') : Promise.resolve(null)
+      isAdmin ? api.get('/bookings') : Promise.resolve(null),
+      api.get('/office-locations')
     ])
     setResources(resourceResponse.data)
     setBookings(myBookingResponse.data)
     setAllBookings(allBookingResponse?.data ?? [])
+    setOffices(officeResponse.data)
   }
 
   useEffect(() => {
@@ -76,6 +82,12 @@ export default function Dashboard({ auth, onLogout }) {
     try { await load() } catch (e) { setError(errorMessage(e)) }
   }
 
+  const resourceAssignmentChanged = async () => {
+    setError('')
+    setMessage('Resource assignment updated.')
+    try { await load() } catch (e) { setError(errorMessage(e)) }
+  }
+
   const bookingCreated = async () => {
     setMessage('Your resource is booked.')
     try { await load() } catch (e) { setError(errorMessage(e)) }
@@ -83,11 +95,13 @@ export default function Dashboard({ auth, onLogout }) {
 
   const navItems = [
     { id: 'overview', label: 'Explore spaces', icon: 'grid' },
+    { id: 'offices', label: 'Office locations', icon: 'pin' },
     { id: 'bookings', label: 'My bookings', icon: 'calendar' },
     ...(isAdmin ? [{ id: 'admin', label: 'Manage workspace', icon: 'settings' }] : [])
   ]
   const viewData = {
     overview: { eyebrow: 'YOUR WORKSPACE', title: 'Find your next space.', note: 'Good spaces make room for good ideas.' },
+    offices: { eyebrow: 'FIND A LOCATION', title: 'Find your people.', note: 'Explore offices and the resources available at each one.' },
     bookings: { eyebrow: 'YOUR SCHEDULE', title: 'Time well reserved.', note: 'All your upcoming plans, together in one place.' },
     admin: { eyebrow: 'WORKSPACE TOOLS', title: 'Make room for everyone.', note: 'Keep shared resources useful, clear, and ready to book.' }
   }[view]
@@ -193,6 +207,9 @@ export default function Dashboard({ auth, onLogout }) {
 
         {loading ? <Box sx={{ display: 'grid', placeItems: 'center', minHeight: 260 }}><CircularProgress color="primary" /></Box> : <>
           {view === 'overview' && <OverviewPanel resources={resources} bookings={bookings} onBook={openBooking} onViewBookings={() => setView('bookings')} />}
+          {view === 'offices' && <Suspense fallback={<Box sx={{ minHeight: 340, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box>}>
+            <OfficeLocationsPage onBook={openBooking} />
+          </Suspense>}
           {view === 'bookings' && <Box>
             <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'end' }} spacing={1.5} sx={{ mb: 2.5 }}>
               <Box><Typography variant="h5">Your bookings</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: .5 }}>The spaces you’ve made time for.</Typography></Box>
@@ -201,7 +218,8 @@ export default function Dashboard({ auth, onLogout }) {
             <BookingList bookings={bookings} onCancel={cancelBooking} />
           </Box>}
           {view === 'admin' && isAdmin && <Grid container spacing={2.5} alignItems="start">
-            <Grid size={{ xs: 12, md: 5 }}><ResourceAdminPanel onCreated={resourceCreated} /></Grid>
+            <Grid size={{ xs: 12 }}><OfficeLocationForm onChanged={refresh} /></Grid>
+            <Grid size={{ xs: 12, md: 5 }}><ResourceAdminPanel offices={offices} resources={resources} bookings={allBookings} onCreated={resourceCreated} onAssignmentChanged={resourceAssignmentChanged} /></Grid>
             <Grid size={{ xs: 12, md: 7 }}>
               <Box sx={{ mb: 2 }}><Typography variant="h5">Workspace schedule</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: .5 }}>Bookings across the team. Future reservations can be cancelled.</Typography></Box>
               <BookingList bookings={allBookings} onCancel={cancelBooking} />
