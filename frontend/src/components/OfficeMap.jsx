@@ -41,7 +41,7 @@ export function OfficeLocationPopup({ location, onViewResources, onClose }) {
         {[location.address, location.city, location.state, location.country].filter(Boolean).join(', ')}
       </Typography>
       <Typography display="block" variant="caption" sx={{ mt: .5 }}>
-        {location.resourceCount} available resource{location.resourceCount === 1 ? '' : 's'}
+        {location.resourceCount} active resource{location.resourceCount === 1 ? '' : 's'}
       </Typography>
     </Box>
     <Button size="small" variant="contained" onClick={() => { onViewResources(location); onClose?.() }}>

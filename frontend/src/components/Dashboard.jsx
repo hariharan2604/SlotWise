@@ -170,7 +170,7 @@ export default function Dashboard({ auth, onLogout }) {
       </Box>
 
       <Box sx={{ maxWidth: 1340, mx: 'auto', px: { xs: 2, sm: 3.5, lg: 5 }, py: { xs: 3, md: 4.5 } }}>
-        <Grid container spacing={2.5} alignItems="stretch" sx={{ mb: { xs: 2.5, md: 4 } }}>
+        {view === 'overview' && <Grid container spacing={2.5} alignItems="stretch" sx={{ mb: { xs: 2.5, md: 4 } }}>
           <Grid size={{ xs: 12, lg: 8 }}>
             <Box sx={{ minHeight: { xs: 210, md: 246 }, height: '100%', p: { xs: 3, sm: 4.5 }, borderRadius: 1.25, overflow: 'hidden', position: 'relative', color: '#f8f6ec', bgcolor: '#24543f', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <Box sx={{ position: 'absolute', right: { xs: -105, md: -40 }, top: { xs: 0, md: -55 }, width: 290, height: 290, borderRadius: '50%', bgcolor: 'rgba(214,242,120,.09)', border: '1px solid rgba(214,242,120,.18)', '&::before': { content: '""', position: 'absolute', inset: 30, borderRadius: '50%', border: '1px solid rgba(214,242,120,.25)' }, '&::after': { content: '""', position: 'absolute', inset: 67, borderRadius: '50%', border: '1px solid rgba(214,242,120,.2)' } }} />
@@ -180,9 +180,7 @@ export default function Dashboard({ auth, onLogout }) {
                 <Typography sx={{ mt: 1.3, color: 'rgba(248,246,236,.66)', fontSize: 14 }}>{viewData.note}</Typography>
               </Box>
               <Box sx={{ position: 'relative', mt: 2.5 }}>
-                {view === 'overview' && <Button onClick={() => openBooking()} variant="contained" endIcon={<UiIcon name="arrow" size={17} />} sx={{ bgcolor: '#d6f278', color: '#1e392c', '&:hover': { bgcolor: '#e3fa9a' } }}>Book a space</Button>}
-                {view === 'bookings' && <Typography sx={{ fontSize: 12, color: 'rgba(248,246,236,.55)' }}>A clear plan is a good start.</Typography>}
-                {view === 'admin' && <Typography sx={{ fontSize: 12, color: 'rgba(248,246,236,.55)' }}>Your spaces. Your schedule. Your call.</Typography>}
+                <Button onClick={() => openBooking()} variant="contained" endIcon={<UiIcon name="arrow" size={17} />} sx={{ bgcolor: '#d6f278', color: '#1e392c', '&:hover': { bgcolor: '#e3fa9a' } }}>Book a space</Button>
               </Box>
             </Box>
           </Grid>
@@ -199,7 +197,7 @@ export default function Dashboard({ auth, onLogout }) {
               </Box>
             </Box>
           </Grid>
-        </Grid>
+        </Grid>}
 
         <Snackbar open={Boolean(message)} autoHideDuration={4000} onClose={() => setMessage('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
           sx={{ bottom: { xs: 'calc(86px + env(safe-area-inset-bottom))', md: 24 } }}>
@@ -214,7 +212,7 @@ export default function Dashboard({ auth, onLogout }) {
         {loading ? <Box sx={{ display: 'grid', placeItems: 'center', minHeight: 260 }}><CircularProgress color="primary" /></Box> : <>
           {view === 'overview' && <OverviewPanel resources={resources} bookings={bookings} onBook={openBooking} onViewBookings={() => setView('bookings')} />}
           {view === 'offices' && <Suspense fallback={<Box sx={{ minHeight: 340, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box>}>
-            <OfficeLocationsPage onBook={openBooking} />
+            <OfficeLocationsPage allResources={resources} onBook={openBooking} />
           </Suspense>}
           {view === 'bookings' && <Box>
             <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'end' }} spacing={1.5} sx={{ mb: 2.5 }}>
@@ -223,14 +221,20 @@ export default function Dashboard({ auth, onLogout }) {
             </Stack>
             <BookingList bookings={bookings} onCancel={cancelBooking} />
           </Box>}
-          {view === 'admin' && isAdmin && <Grid container spacing={2.5} alignItems="start">
-            <Grid size={{ xs: 12 }}><OfficeLocationForm onChanged={refresh} /></Grid>
-            <Grid size={{ xs: 12, lg: 5 }}><ResourceAdminPanel offices={offices} resources={resources} bookings={allBookings} onCreated={resourceCreated} onAssignmentChanged={resourceAssignmentChanged} /></Grid>
-            <Grid size={{ xs: 12, lg: 7 }}>
-              <Box sx={{ mb: 2 }}><Typography variant="h5">Workspace schedule</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: .5 }}>Bookings across the team. Future reservations can be cancelled.</Typography></Box>
-              <BookingList bookings={allBookings} onCancel={cancelBooking} />
+          {view === 'admin' && isAdmin && <>
+            <Box sx={{ mb: 2.5 }}>
+              <Typography variant="h4">Manage workspace</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: .5 }}>Keep office locations, shared resources, and bookings organized.</Typography>
+            </Box>
+            <Grid container spacing={2.5} alignItems="start">
+              <Grid size={{ xs: 12 }}><OfficeLocationForm onChanged={refresh} /></Grid>
+              <Grid size={{ xs: 12, lg: 5 }}><ResourceAdminPanel offices={offices} resources={resources} bookings={allBookings} onCreated={resourceCreated} onAssignmentChanged={resourceAssignmentChanged} /></Grid>
+              <Grid size={{ xs: 12, lg: 7 }}>
+                <Box sx={{ mb: 2 }}><Typography variant="h5">Workspace schedule</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: .5 }}>Bookings across the team. Future reservations can be cancelled.</Typography></Box>
+                <BookingList bookings={allBookings} onCancel={cancelBooking} />
+              </Grid>
             </Grid>
-          </Grid>}
+          </>}
         </>}
       </Box>
     </Box>

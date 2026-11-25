@@ -1,11 +1,11 @@
 # SlotWise — Resource Booking MVP
 
-SlotWise is a small full-stack resource booking application built with ASP.NET Core Web API, React, TypeScript, Material UI, Entity Framework Core, and SQL Server.
+SlotWise is a small full-stack resource booking application built with ASP.NET Core Web API, React, Material UI, Entity Framework Core, and SQL Server.
 
 ## MVP functionality
-- User registration and JWT login
+- User registration and login
 - JWT authentication stored in an HttpOnly cookie (not browser storage)
-- Seeded bookable resources
+- Seeded demo resources and a development admin account
 - View resources
 - Create bookings with UTC timestamps
 - Reject overlapping bookings for the same resource
@@ -13,7 +13,8 @@ SlotWise is a small full-stack resource booking application built with ASP.NET C
 - Cancel future bookings
 - Admin-only resource creation and all-bookings view
 - Admin-managed office locations with an OpenStreetMap-powered discovery map
-- Office-specific resource discovery, availability checks, and directions
+- Assign resources to offices and handle existing bookings when an assignment changes
+- Workspace-wide and office-specific resource discovery, availability checks, and directions
 
 ## Prerequisites
 - .NET 10 SDK
@@ -82,7 +83,7 @@ VITE_API_URL=http://localhost:5080/api
 - Users can cancel only their own future bookings; Admin can cancel any future booking.
 
 ## Office locations and map
-Admins can add or update office locations under **Manage workspace**, entering latitude and longitude manually or using browser geolocation to fill the coordinates, and associate resources with an active office. Employees can select **Office locations** to view active offices, their resources, and resource availability before booking. When an admin changes a resource's office and it has future confirmed bookings, the admin must choose to move those bookings with the resource or cancel them. Booking views show the resource's current office. Office deactivation hides the office and its associated resources from employee discovery and prevents new bookings, while preserving existing bookings.
+Admins can add or update office locations under **Manage workspace**, entering latitude and longitude manually or using browser geolocation to fill the coordinates, and associate resources with an active office. Employees can use **Find a free space** on the Office locations page to search all active resources for a time window, or select an office to browse its resources. Map markers and the location sidebar reveal office resources and directions. When an admin changes a resource's office and it has future confirmed bookings, the admin must choose to move those bookings with the resource or cancel them. Booking views show the resource's current office. Office deactivation hides the office and its associated resources from employee discovery and prevents new bookings, while preserving existing bookings.
 
 The map uses Leaflet and OpenStreetMap data/tiles without an API key. Tile requests use `tile.openstreetmap.org` with visible attribution; the public OSM tile service has a usage policy and is not an unlimited production tile CDN. Review https://operations.osmfoundation.org/policies/tiles/ before deployment and use a compliant provider or self-hosted tiles if production traffic requires it. Directions open OpenStreetMap in a new tab; no routing API or geocoding service is used.
 
@@ -120,6 +121,7 @@ This is a learning MVP, not a production-certified reservation platform. Before 
 - `GET /api/bookings` (Admin)
 - `DELETE /api/bookings/{id}`
 - `GET /api/bookings/availability?resourceId=1&start=...&end=...`
+- `GET /api/bookings/availability/resources?start=...&end=...`
 
 Successful JSON responses use `{ "success": true, "message": "...", "data": ... }`. Errors use RFC Problem Details (`application/problem+json`) with a `traceId`; validation failures include an `errors` object. `204 No Content` is retained for successful booking cancellation.
 

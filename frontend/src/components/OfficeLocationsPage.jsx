@@ -4,8 +4,9 @@ import { api, errorMessage } from '../api'
 import OfficeLocationSidebar from './OfficeLocationSidebar'
 import OfficeMap from './OfficeMap'
 import OfficeResourceList from './OfficeResourceList'
+import ResourceAvailabilitySearch from './ResourceAvailabilitySearch'
 
-export default function OfficeLocationsPage({ onBook }) {
+export default function OfficeLocationsPage({ allResources, onBook }) {
   const [locations, setLocations] = useState([])
   const [selectedId, setSelectedId] = useState(null)
   const [resources, setResources] = useState([])
@@ -55,47 +56,41 @@ export default function OfficeLocationsPage({ onBook }) {
   }, [selectedLocation])
 
   const selectOffice = (location) => setSelectedId(location.id)
-  const checkAvailability = async (id, start, end) => {
-    try {
-      const { data } = await api.get(`/office-locations/${id}/resources/availability`, { params: { start, end } })
-      return data
-    } catch (error) {
-      throw new Error(errorMessage(error))
-    }
-  }
 
   return <Box>
     <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'end' }} justifyContent="space-between" spacing={1} sx={{ mb: 2.5 }}>
       <Box>
         <Typography variant="h5">Explore Office Locations</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: .5 }}>
-          Find an office, discover its resources, and plan your visit.
+          Search availability across all offices, or select a location to browse its resources.
         </Typography>
       </Box>
-      <Typography variant="caption" color="text.secondary">Map data provided by OpenStreetMap</Typography>
     </Stack>
+    <Box sx={{ mb: 2.5 }}>
+      <ResourceAvailabilitySearch resources={allResources} onBook={onBook} />
+    </Box>
     {locationError && <Alert severity={locations.length ? 'warning' : 'error'} sx={{ mb: 2 }}>{locationError}</Alert>}
     {loadingLocations ? <Box sx={{ minHeight: 340, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box> :
-      <Grid container spacing={2} alignItems="stretch">
-        <Grid size={{ xs: 12, lg: 8 }}>
-          <OfficeMap locations={locations} selectedLocation={selectedLocation} onSelect={selectOffice} onViewResources={selectOffice} />
-          {selectedLocation && <OfficeResourceList
-            location={selectedLocation}
-            resources={resources}
-            loading={loadingResources}
-            error={resourceError}
-            onCheckAvailability={checkAvailability}
-            onBook={onBook}
-          />}
+      <>
+        <Grid container spacing={2} alignItems="stretch">
+          <Grid size={{ xs: 12, lg: 8 }}>
+            <OfficeMap locations={locations} selectedLocation={selectedLocation} onSelect={selectOffice} onViewResources={selectOffice} />
+          </Grid>
+          <Grid size={{ xs: 12, lg: 4 }}>
+            <OfficeLocationSidebar
+              locations={locations}
+              selectedId={selectedId}
+              onSelect={selectOffice}
+            />
+          </Grid>
         </Grid>
-        <Grid size={{ xs: 12, lg: 4 }}>
-          <OfficeLocationSidebar
-            locations={locations}
-            selectedId={selectedId}
-            onSelect={selectOffice}
-            onViewResources={selectOffice}
-          />
-        </Grid>
-      </Grid>}
+        {selectedLocation && <OfficeResourceList
+          location={selectedLocation}
+          resources={resources}
+          loading={loadingResources}
+          error={resourceError}
+          onBook={onBook}
+        />}
+      </>}
   </Box>
 }

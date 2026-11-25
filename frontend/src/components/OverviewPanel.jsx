@@ -1,5 +1,4 @@
 import { Box, Button, Card, CardContent, Chip, Grid, Stack, Typography } from '@mui/material'
-import ResourceAvailabilitySearch from './ResourceAvailabilitySearch'
 import UiIcon from './UiIcon'
 
 const resourceTones = [
@@ -37,8 +36,6 @@ export default function OverviewPanel({ resources, bookings, onBook, onViewBooki
       </Grid>)}
     </Grid>
 
-    <ResourceAvailabilitySearch resources={resources} onBook={onBook} />
-
     <Box>
       <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'end' }} spacing={1.5} sx={{ mb: 2.2 }}>
         <Box>
@@ -67,7 +64,7 @@ export default function OverviewPanel({ resources, bookings, onBook, onViewBooki
                   <UiIcon name={isRoom ? 'room' : 'sparkle'} size={24} />
                 </Box>
                 <Typography sx={{ position: 'absolute', top: 18, left: 22, fontSize: 10, fontWeight: 800, letterSpacing: 1.6, opacity: .75 }}>SPACE {String(index + 1).padStart(2, '0')}</Typography>
-                <Chip size="small" label="AVAILABLE" sx={{ position: 'absolute', top: 16, right: 16, color: tone.ink, bgcolor: 'rgba(255,254,250,.8)', fontSize: 9, letterSpacing: .6 }} />
+                <Chip size="small" label="ACTIVE" sx={{ position: 'absolute', top: 16, right: 16, color: tone.ink, bgcolor: 'rgba(255,254,250,.8)', fontSize: 9, letterSpacing: .6 }} />
               </Box>
               <CardContent sx={{ p: 2.5 }}>
                 <Stack spacing={1.8}>

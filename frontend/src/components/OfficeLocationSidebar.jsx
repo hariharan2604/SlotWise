@@ -5,7 +5,7 @@ function directionsUrl(location) {
   return `https://www.openstreetmap.org/directions?to=${encodeURIComponent(`${location.latitude},${location.longitude}`)}`
 }
 
-export default function OfficeLocationSidebar({ locations, selectedId, onSelect, onViewResources }) {
+export default function OfficeLocationSidebar({ locations, selectedId, onSelect }) {
   return <Card variant="outlined" sx={{ height: '100%', borderColor: '#e8e6dc', borderRadius: 1, bgcolor: '#fffefa', boxShadow: 'none' }}>
     <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
       <Typography variant="h6">Office locations</Typography>
@@ -33,8 +33,7 @@ export default function OfficeLocationSidebar({ locations, selectedId, onSelect,
               </Button>
               <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'center' }} spacing={.5} sx={{ mt: 1 }}>
                 <Typography variant="caption" color="text.secondary">{location.resourceCount} resources</Typography>
-                <Stack direction="row" spacing={.5} sx={{ flexWrap: 'wrap' }}>
-                  <Button size="small" onClick={() => onViewResources(location)} sx={{ minWidth: 0, px: 1, fontSize: 11 }}>Resources</Button>
+                <Stack direction="row" justifyContent="flex-end">
                   <Button size="small" component="a" href={directionsUrl(location)} target="_blank" rel="noopener noreferrer"
                     startIcon={<UiIcon name="pin" size={13} />} sx={{ minWidth: 0, px: 1, fontSize: 11 }}>
                     Directions
