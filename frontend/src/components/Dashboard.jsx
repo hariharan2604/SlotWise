@@ -94,10 +94,10 @@ export default function Dashboard({ auth, onLogout }) {
   }
 
   const navItems = [
-    { id: 'overview', label: 'Explore spaces', icon: 'grid' },
-    { id: 'offices', label: 'Office locations', icon: 'pin' },
-    { id: 'bookings', label: 'My bookings', icon: 'calendar' },
-    ...(isAdmin ? [{ id: 'admin', label: 'Manage workspace', icon: 'settings' }] : [])
+    { id: 'overview', label: 'Explore spaces', mobileLabel: 'Explore', icon: 'grid' },
+    { id: 'offices', label: 'Office locations', mobileLabel: 'Offices', icon: 'pin' },
+    { id: 'bookings', label: 'My bookings', mobileLabel: 'Bookings', icon: 'calendar' },
+    ...(isAdmin ? [{ id: 'admin', label: 'Manage workspace', mobileLabel: 'Manage', icon: 'settings' }] : [])
   ]
   const viewData = {
     overview: { eyebrow: 'YOUR WORKSPACE', title: 'Find your next space.', note: 'Good spaces make room for good ideas.' },
@@ -108,19 +108,22 @@ export default function Dashboard({ auth, onLogout }) {
   const initials = auth.displayName?.split(/\s+/).map((part) => part[0]).slice(0, 2).join('').toUpperCase()
   const today = new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date())
 
-  const NavLinks = ({ compact = false }) => <Stack direction={compact ? 'row' : 'column'} spacing={compact ? 0 : .65}>
+  const NavLinks = ({ compact = false }) => <Stack direction={compact ? 'row' : 'column'} spacing={compact ? .25 : .65} sx={compact ? { width: '100%' } : undefined}>
     {navItems.map((item) => {
       const active = view === item.id
-      return <Button key={item.id} onClick={() => setView(item.id)} startIcon={<UiIcon name={item.icon} size={19} />} sx={{
+      return <Button key={item.id} aria-current={active ? 'page' : undefined} onClick={() => setView(item.id)} startIcon={<UiIcon name={item.icon} size={19} />} sx={{
+        flex: compact ? 1 : undefined,
         minWidth: 0, justifyContent: compact ? 'center' : 'flex-start', flexDirection: compact ? 'column' : 'row',
-        gap: compact ? .45 : 0, px: compact ? .5 : 1.5, py: compact ? 1 : 1.25, minHeight: compact ? 58 : 48,
+        gap: compact ? .35 : 0, px: compact ? .25 : 1.5, py: compact ? .65 : 1.25, minHeight: compact ? 60 : 48,
         borderRadius: compact ? 1.5 : 1,
         color: compact ? (active ? '#24543f' : '#85867d') : (active ? '#f5f4e9' : 'rgba(248,246,236,.58)'),
         bgcolor: compact ? 'transparent' : (active ? 'rgba(214,242,120,.12)' : 'transparent'),
         '& .MuiButton-startIcon': { mr: compact ? 0 : 1.5, ml: 0 },
         '&:hover': { bgcolor: compact ? 'rgba(36,84,63,.07)' : 'rgba(214,242,120,.1)', color: compact ? '#24543f' : '#fff' }
       }}>
-        {compact ? <Typography sx={{ fontSize: 10, fontWeight: active ? 800 : 600, lineHeight: 1.1 }}>{item.label.split(' ')[0]}</Typography> : item.label}
+        {compact
+          ? <Typography sx={{ fontSize: { xs: 9, sm: 10 }, fontWeight: active ? 800 : 600, lineHeight: 1.1, whiteSpace: 'nowrap' }}>{item.mobileLabel}</Typography>
+          : item.label}
       </Button>
     })}
   </Stack>
@@ -135,7 +138,9 @@ export default function Dashboard({ auth, onLogout }) {
         <Typography sx={{ fontWeight: 800, letterSpacing: '-.045em', fontSize: 22 }}>slotwise<span style={{ color: '#d6f278' }}>.</span></Typography>
       </Stack>
       <Typography sx={{ pl: 1.5, mb: 1.2, color: 'rgba(248,246,236,.38)', fontSize: 10, fontWeight: 800, letterSpacing: 1.8 }}>MENU</Typography>
-      <NavLinks />
+      <Box component="nav" aria-label="Primary navigation">
+        <NavLinks />
+      </Box>
       <Box sx={{ mt: 'auto', p: 1.5, borderRadius: 1.5, bgcolor: 'rgba(255,255,255,.055)', border: '1px solid rgba(255,255,255,.07)' }}>
         <Stack direction="row" spacing={1.25} alignItems="center">
           <Avatar sx={{ width: 38, height: 38, bgcolor: '#d6f278', color: '#193d2d', fontSize: 12, fontWeight: 800 }}>{initials}</Avatar>
@@ -148,8 +153,8 @@ export default function Dashboard({ auth, onLogout }) {
       </Box>
     </Drawer>
 
-    <Box component="main" sx={{ flex: 1, minWidth: 0, pb: { xs: 9, md: 0 } }}>
-      <Box sx={{ height: 72, px: { xs: 2.2, sm: 3.5, lg: 5 }, display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'rgba(255,254,250,.84)', borderBottom: '1px solid #e9e7de' }}>
+    <Box component="main" sx={{ flex: 1, minWidth: 0, pb: { xs: 'calc(78px + env(safe-area-inset-bottom))', md: 0 } }}>
+      <Box sx={{ position: 'sticky', top: 0, zIndex: 1100, height: { xs: 64, sm: 72 }, px: { xs: 2, sm: 3.5, lg: 5 }, display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'rgba(255,254,250,.92)', borderBottom: '1px solid #e9e7de', backdropFilter: 'blur(14px)' }}>
         <Stack direction="row" alignItems="center" spacing={1}>
           <Typography sx={{ display: { xs: 'block', md: 'none' }, fontSize: 20, fontWeight: 800, letterSpacing: '-.04em' }}>slotwise<span style={{ color: '#718a49' }}>.</span></Typography>
           <Box sx={{ display: { xs: 'none', md: 'block' } }}>
@@ -165,8 +170,8 @@ export default function Dashboard({ auth, onLogout }) {
       </Box>
 
       <Box sx={{ maxWidth: 1340, mx: 'auto', px: { xs: 2, sm: 3.5, lg: 5 }, py: { xs: 3, md: 4.5 } }}>
-        <Grid container spacing={2.5} alignItems="stretch" sx={{ mb: 4 }}>
-          <Grid size={{ xs: 12, md: 8 }}>
+        <Grid container spacing={2.5} alignItems="stretch" sx={{ mb: { xs: 2.5, md: 4 } }}>
+          <Grid size={{ xs: 12, lg: 8 }}>
             <Box sx={{ minHeight: { xs: 210, md: 246 }, height: '100%', p: { xs: 3, sm: 4.5 }, borderRadius: 1.25, overflow: 'hidden', position: 'relative', color: '#f8f6ec', bgcolor: '#24543f', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <Box sx={{ position: 'absolute', right: { xs: -105, md: -40 }, top: { xs: 0, md: -55 }, width: 290, height: 290, borderRadius: '50%', bgcolor: 'rgba(214,242,120,.09)', border: '1px solid rgba(214,242,120,.18)', '&::before': { content: '""', position: 'absolute', inset: 30, borderRadius: '50%', border: '1px solid rgba(214,242,120,.25)' }, '&::after': { content: '""', position: 'absolute', inset: 67, borderRadius: '50%', border: '1px solid rgba(214,242,120,.2)' } }} />
               <Box sx={{ position: 'relative', maxWidth: 570 }}>
@@ -181,7 +186,7 @@ export default function Dashboard({ auth, onLogout }) {
               </Box>
             </Box>
           </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid size={{ xs: 12, lg: 4 }}>
             <Box sx={{ height: '100%', minHeight: 180, p: 3.5, borderRadius: 1.25, position: 'relative', overflow: 'hidden', bgcolor: '#e7edda', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <Box sx={{ position: 'absolute', right: -24, bottom: -37, width: 180, height: 180, borderRadius: '50%', bgcolor: '#d6f278', opacity: .48 }} />
               <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ position: 'relative' }}>
@@ -196,7 +201,8 @@ export default function Dashboard({ auth, onLogout }) {
           </Grid>
         </Grid>
 
-        <Snackbar open={Boolean(message)} autoHideDuration={4000} onClose={() => setMessage('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+        <Snackbar open={Boolean(message)} autoHideDuration={4000} onClose={() => setMessage('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          sx={{ bottom: { xs: 'calc(86px + env(safe-area-inset-bottom))', md: 24 } }}>
           <Alert severity="success" variant="filled" sx={{ width: '100%', borderRadius: 1, bgcolor: '#24543f' }} onClose={() => setMessage('')}>{message}</Alert>
         </Snackbar>
         {error && <Alert severity="error" variant="outlined" sx={{ mb: 3, borderRadius: 1, bgcolor: '#fffefa', alignItems: 'center' }} action={
@@ -213,14 +219,14 @@ export default function Dashboard({ auth, onLogout }) {
           {view === 'bookings' && <Box>
             <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'end' }} spacing={1.5} sx={{ mb: 2.5 }}>
               <Box><Typography variant="h5">Your bookings</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: .5 }}>The spaces you’ve made time for.</Typography></Box>
-              <Button onClick={() => openBooking()} variant="outlined" startIcon={<UiIcon name="plus" size={17} />}>New booking</Button>
+              <Button onClick={() => openBooking()} variant="outlined" startIcon={<UiIcon name="plus" size={17} />} sx={{ alignSelf: { xs: 'flex-start', sm: 'auto' } }}>New booking</Button>
             </Stack>
             <BookingList bookings={bookings} onCancel={cancelBooking} />
           </Box>}
           {view === 'admin' && isAdmin && <Grid container spacing={2.5} alignItems="start">
             <Grid size={{ xs: 12 }}><OfficeLocationForm onChanged={refresh} /></Grid>
-            <Grid size={{ xs: 12, md: 5 }}><ResourceAdminPanel offices={offices} resources={resources} bookings={allBookings} onCreated={resourceCreated} onAssignmentChanged={resourceAssignmentChanged} /></Grid>
-            <Grid size={{ xs: 12, md: 7 }}>
+            <Grid size={{ xs: 12, lg: 5 }}><ResourceAdminPanel offices={offices} resources={resources} bookings={allBookings} onCreated={resourceCreated} onAssignmentChanged={resourceAssignmentChanged} /></Grid>
+            <Grid size={{ xs: 12, lg: 7 }}>
               <Box sx={{ mb: 2 }}><Typography variant="h5">Workspace schedule</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: .5 }}>Bookings across the team. Future reservations can be cancelled.</Typography></Box>
               <BookingList bookings={allBookings} onCancel={cancelBooking} />
             </Grid>
@@ -229,7 +235,7 @@ export default function Dashboard({ auth, onLogout }) {
       </Box>
     </Box>
 
-    <Box sx={{ position: 'fixed', display: { xs: 'block', md: 'none' }, zIndex: 1200, bottom: 0, left: 0, right: 0, px: 1.5, pb: 'max(10px, env(safe-area-inset-bottom))', pt: 1, bgcolor: 'rgba(255,254,250,.96)', borderTop: '1px solid #e9e7de', backdropFilter: 'blur(14px)' }}>
+    <Box component="nav" aria-label="Primary navigation" sx={{ position: 'fixed', display: { xs: 'block', md: 'none' }, zIndex: 1200, bottom: 0, left: 0, right: 0, px: 1, pb: 'max(8px, env(safe-area-inset-bottom))', pt: .5, bgcolor: 'rgba(255,254,250,.96)', borderTop: '1px solid #e9e7de', backdropFilter: 'blur(14px)' }}>
       <NavLinks compact />
     </Box>
     <BookingDialog open={bookingDialog} resources={resources} initialResource={initialResource} initialStart={initialStart} initialEnd={initialEnd} onClose={() => setBookingDialog(false)} onBooked={bookingCreated} />

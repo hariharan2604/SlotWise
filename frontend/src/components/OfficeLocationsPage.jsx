@@ -24,13 +24,14 @@ export default function OfficeLocationsPage({ onBook }) {
     api.get('/office-locations')
       .then(({ data }) => {
         if (!active) return
-        const valid = data.filter((location) =>
+        const activeLocations = data.filter((location) => location.isActive)
+        const valid = activeLocations.filter((location) =>
           Number.isFinite(Number(location.latitude)) && Number.isFinite(Number(location.longitude)) &&
           Number(location.latitude) >= -90 && Number(location.latitude) <= 90 &&
           Number(location.longitude) >= -180 && Number(location.longitude) <= 180)
         setLocations(valid)
         setSelectedId(valid[0]?.id ?? null)
-        if (valid.length !== data.length) setLocationError('Some office locations have invalid coordinates and were not shown on the map.')
+        if (valid.length !== activeLocations.length) setLocationError('Some office locations have invalid coordinates and were not shown on the map.')
       })
       .catch((error) => { if (active) setLocationError(errorMessage(error)) })
       .finally(() => { if (active) setLoadingLocations(false) })

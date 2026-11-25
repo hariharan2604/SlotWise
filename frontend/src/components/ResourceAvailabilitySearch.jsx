@@ -31,10 +31,10 @@ export default function ResourceAvailabilitySearch({ resources, onBook }) {
   const availableResources = availableResourceIds === null ? [] : resources.filter((resource) => availableResourceIds.includes(resource.id))
   const startDate = parseLocalDateTime(searchStart)
 
-  return <Card variant="outlined" sx={{ borderRadius: 1, border: '1px solid #dfe4d5', bgcolor: '#e9eee1', boxShadow: 'none', overflow: 'hidden' }}>
+  return <Card variant="outlined" sx={{ borderRadius: 2, border: '1px solid #dfe4d5', bgcolor: '#e9eee1', boxShadow: '0 10px 28px rgba(39,44,35,.045)', overflow: 'hidden' }}>
     <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 2, sm: 3 }} alignItems={{ sm: 'center' }}>
-        <Box sx={{ width: { xs: '100%', sm: 220 }, flexShrink: 0 }}>
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={{ xs: 2, md: 3 }} alignItems={{ md: 'center' }}>
+        <Box sx={{ width: { xs: '100%', md: 220 }, flexShrink: 0 }}>
           <Stack direction="row" spacing={1.2} alignItems="center">
             <Box sx={{ width: 40, height: 40, borderRadius: '50%', display: 'grid', placeItems: 'center', bgcolor: '#24543f', color: '#d6f278' }}><UiIcon name="search" size={18} /></Box>
             <Box>
@@ -43,7 +43,7 @@ export default function ResourceAvailabilitySearch({ resources, onBook }) {
             </Box>
           </Stack>
         </Box>
-        <Stack component="form" onSubmit={(event) => { event.preventDefault(); void findAvailableResources() }} direction={{ xs: 'column', sm: 'row' }} spacing={1.25} sx={{ flex: 1, minWidth: 0 }}>
+        <Stack component="form" onSubmit={(event) => { event.preventDefault(); void findAvailableResources() }} direction={{ xs: 'column', md: 'row' }} spacing={1.25} sx={{ flex: 1, minWidth: 0 }}>
           <DateTimePicker label="From" value={parseLocalDateTime(searchStart)} format="dd/MM/yyyy hh:mm a"
             onChange={(value) => { setSearchStart(toLocalDateTimeInput(value)); setAvailableResourceIds(null); setAvailabilitySearchError('') }}
             minDateTime={new Date(Math.ceil(Date.now() / 300000) * 300000)} minutesStep={5} disablePast
@@ -55,7 +55,7 @@ export default function ResourceAvailabilitySearch({ resources, onBook }) {
             slotProps={{ textField: { fullWidth: true, required: true, sx: { minWidth: 0 } } }} />
           <Button type="submit" variant="contained" disabled={searchingAvailability || !resources.length || !searchStart || !searchEnd}
             endIcon={!searchingAvailability && <UiIcon name="arrow" size={16} />}
-            sx={{ minWidth: { sm: 155 }, flexShrink: 0, bgcolor: '#24543f', '&:hover': { bgcolor: '#193d2d' } }}>
+            sx={{ minWidth: { md: 155 }, flexShrink: 0, bgcolor: '#24543f', '&:hover': { bgcolor: '#193d2d' } }}>
             {searchingAvailability ? <CircularProgress size={20} color="inherit" /> : 'Show spaces'}
           </Button>
         </Stack>
@@ -69,13 +69,14 @@ export default function ResourceAvailabilitySearch({ resources, onBook }) {
           </Box>
         </Stack>
         {availableResources.length > 0 && <Grid container spacing={1}>
-          {availableResources.map((resource) => <Grid size={{ xs: 12, sm: 6, md: 4 }} key={resource.id}>
-            <Card variant="outlined" sx={{ borderRadius: 1, borderColor: '#d9e0d0', bgcolor: '#fffefa', boxShadow: 'none' }}>
+          {availableResources.map((resource) => <Grid size={{ xs: 12, md: 6, lg: 4 }} key={resource.id}>
+            <Card variant="outlined" sx={{ borderRadius: 1.5, borderColor: '#d9e0d0', bgcolor: '#fffefa', boxShadow: 'none' }}>
               <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
                   <Box sx={{ minWidth: 0 }}>
                     <Typography sx={{ fontSize: 13, fontWeight: 750 }} noWrap>{resource.name}</Typography>
-                    <Typography sx={{ mt: .35, fontSize: 10, color: '#77796f' }}>{resource.location || 'Location to be confirmed'} · Up to {resource.capacity}</Typography>
+                    <Typography sx={{ mt: .35, fontSize: 10, color: '#77796f' }}>Resource: {resource.location || 'Location not specified'}</Typography>
+                    <Typography sx={{ mt: .2, fontSize: 10, color: '#77796f' }}>Office location: {resource.officeLocationName || 'No office assigned'} · Up to {resource.capacity}</Typography>
                   </Box>
                   <Button size="small" onClick={() => onBook(resource.id, searchStart, searchEnd)} endIcon={<UiIcon name="arrow" size={14} />} sx={{ color: '#24543f', px: 1 }}>Book</Button>
                 </Stack>

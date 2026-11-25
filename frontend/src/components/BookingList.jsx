@@ -21,7 +21,7 @@ export default function BookingList({ bookings, onCancel }) {
       const dateMonth = Number.isNaN(start.getTime()) ? '' : new Intl.DateTimeFormat(undefined, { month: 'short' }).format(start)
       return <Card key={booking.id} variant="outlined" sx={{ border: '1px solid #e9e7de', borderRadius: 1, bgcolor: '#fffefa', boxShadow: 'none' }}>
         <CardContent sx={{ p: { xs: 1.75, sm: 2.5 }, '&:last-child': { pb: { xs: 1.75, sm: 2.5 } } }}>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }}>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ md: 'center' }}>
             <Stack direction="row" spacing={1.75} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
               <Box sx={{ flexShrink: 0, width: 54, height: 62, borderRadius: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: booking.status === 'Confirmed' ? '#e8ede0' : '#f0efea', color: booking.status === 'Confirmed' ? '#24543f' : '#77796f' }}>
                 <Typography sx={{ fontSize: 22, lineHeight: 1, fontWeight: 750, letterSpacing: '-.05em' }}>{dateNumber}</Typography>
@@ -33,14 +33,19 @@ export default function BookingList({ bookings, onCancel }) {
                   <Chip size="small" label={booking.status} color={booking.status === 'Confirmed' ? 'success' : 'default'} />
                 </Stack>
                 <Typography sx={{ mt: .45, fontSize: 12, color: '#77796f' }}>{booking.purpose || 'Workspace reservation'}</Typography>
-                {booking.officeLocationName && <Typography sx={{ mt: .45, fontSize: 11, color: '#77796f' }}>
-                  Office: {booking.officeLocationName}
-                </Typography>}
+                <Stack direction="row" spacing={.6} alignItems="center" sx={{ mt: .55, color: '#77796f' }}>
+                  <Box sx={{ display: 'flex', color: '#718a49' }}><UiIcon name="pin" size={13} /></Box>
+                  <Typography sx={{ minWidth: 0, fontSize: 11, overflowWrap: 'anywhere' }}>Resource location: {booking.resourceLocation || 'Location not specified'}</Typography>
+                </Stack>
+                <Stack direction="row" spacing={.6} alignItems="center" sx={{ mt: .4, color: '#77796f' }}>
+                  <Box sx={{ display: 'flex', color: '#718a49' }}><UiIcon name="room" size={13} /></Box>
+                  <Typography sx={{ minWidth: 0, fontSize: 11, overflowWrap: 'anywhere' }}>Office location: {booking.officeLocationName || 'No office assigned'}</Typography>
+                </Stack>
                 {booking.bookedBy && <Typography sx={{ mt: .45, fontSize: 11, color: '#92938a' }}>Reserved by {booking.bookedBy}</Typography>}
               </Box>
             </Stack>
-            <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', sm: 'block' } }} />
-            <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2} sx={{ pl: { sm: 1 } }}>
+            <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', md: 'block' } }} />
+            <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2} sx={{ pl: { md: 1 } }}>
               <Stack direction="row" spacing={.8} alignItems="center" sx={{ color: '#555b51' }}>
                 <Box sx={{ color: '#718a49', display: 'flex' }}><UiIcon name="clock" size={16} /></Box>
                 <Box>

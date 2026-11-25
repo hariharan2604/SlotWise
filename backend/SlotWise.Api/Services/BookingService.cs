@@ -112,6 +112,7 @@ public sealed class BookingService(
             DateTime.SpecifyKind(booking.EndUtc, DateTimeKind.Utc),
             booking.Status.ToString(),
             bookedBy,
+            booking.Resource!.Location,
             booking.Resource?.OfficeLocation?.Name);
 
     private static void ValidateInterval(DateTimeOffset start, DateTimeOffset end)

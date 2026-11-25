@@ -29,9 +29,9 @@ public sealed class OfficeLocationService(
         int id,
         CancellationToken cancellationToken)
     {
-        await GetRequiredActiveOfficeAsync(id, cancellationToken);
+        var office = await GetRequiredActiveOfficeAsync(id, cancellationToken);
         var resources = await offices.GetActiveResourcesAsync(id, cancellationToken);
-        return resources.Select(ToResourceResponse).ToList();
+        return resources.Select(resource => ToResourceResponse(resource, office.Name)).ToList();
     }
 
     public async Task<IReadOnlyList<OfficeResourceAvailabilityResponse>> GetAvailabilityAsync(
@@ -40,11 +40,11 @@ public sealed class OfficeLocationService(
         DateTimeOffset end,
         CancellationToken cancellationToken)
     {
-        await GetRequiredActiveOfficeAsync(id, cancellationToken);
+        var office = await GetRequiredActiveOfficeAsync(id, cancellationToken);
         var resources = await offices.GetActiveResourcesAsync(id, cancellationToken);
         var availableIds = (await bookings.AvailableResourceIdsAsync(start, end, cancellationToken)).ToHashSet();
         return resources.Select(resource =>
-            new OfficeResourceAvailabilityResponse(ToResourceResponse(resource), availableIds.Contains(resource.Id)))
+            new OfficeResourceAvailabilityResponse(ToResourceResponse(resource, office.Name), availableIds.Contains(resource.Id)))
             .ToList();
     }
 
@@ -101,11 +101,12 @@ public sealed class OfficeLocationService(
         await offices.SaveChangesAsync(cancellationToken);
     }
 
-    private async Task GetRequiredActiveOfficeAsync(int id, CancellationToken cancellationToken)
+    private async Task<OfficeLocation> GetRequiredActiveOfficeAsync(int id, CancellationToken cancellationToken)
     {
         var office = await offices.GetByIdAsync(id, cancellationToken);
         if (office is null || !office.IsActive)
             throw new KeyNotFoundException("Office location not found.");
+        return office;
     }
 
     private static void Validate(
@@ -137,7 +138,8 @@ public sealed class OfficeLocationService(
                 : null,
             office.Resources.Count(resource => resource.IsActive));
 
-    private static ResourceResponse ToResourceResponse(Resource resource) =>
+    private static ResourceResponse ToResourceResponse(Resource resource, string? officeLocationName = null) =>
         new(resource.Id, resource.Name, resource.Description, resource.Location,
-            resource.Capacity, resource.IsActive, resource.OfficeLocationId);
+            resource.Capacity, resource.IsActive, resource.OfficeLocationId,
+            officeLocationName ?? resource.OfficeLocation?.Name);
 }

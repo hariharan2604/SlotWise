@@ -18,9 +18,11 @@ export default function OfficeLocationSidebar({ locations, selectedId, onSelect,
             const selected = selectedId === location.id
             return <Box key={location.id} sx={{
               border: '1px solid', borderColor: selected ? '#a4b993' : '#eeede6',
-              borderRadius: 1, bgcolor: selected ? '#f2f5eb' : '#fffefa', p: 1.4
+              borderRadius: 1.5, bgcolor: selected ? '#f2f5eb' : '#fffefa', p: 1.4,
+              transition: 'border-color .18s ease, background-color .18s ease',
+              '&:hover': { borderColor: '#cdd5c4' }
             }}>
-              <Button fullWidth onClick={() => onSelect(location)} sx={{
+              <Button fullWidth aria-pressed={selected} onClick={() => onSelect(location)} sx={{
                 display: 'block', p: 0, minHeight: 0, textAlign: 'left', color: '#232921',
                 '&:hover': { bgcolor: 'transparent' }
               }}>
@@ -29,9 +31,9 @@ export default function OfficeLocationSidebar({ locations, selectedId, onSelect,
                   {[location.city, location.state, location.country].filter(Boolean).join(', ')}
                 </Typography>
               </Button>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 1 }}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'center' }} spacing={.5} sx={{ mt: 1 }}>
                 <Typography variant="caption" color="text.secondary">{location.resourceCount} resources</Typography>
-                <Stack direction="row" spacing={.5}>
+                <Stack direction="row" spacing={.5} sx={{ flexWrap: 'wrap' }}>
                   <Button size="small" onClick={() => onViewResources(location)} sx={{ minWidth: 0, px: 1, fontSize: 11 }}>Resources</Button>
                   <Button size="small" component="a" href={directionsUrl(location)} target="_blank" rel="noopener noreferrer"
                     startIcon={<UiIcon name="pin" size={13} />} sx={{ minWidth: 0, px: 1, fontSize: 11 }}>

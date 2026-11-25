@@ -5,7 +5,7 @@ namespace SlotWise.Api.Dtos;
 
 public record ResourceRequest(string Name, string Description, string Location, int Capacity, int? OfficeLocationId = null);
 public record ResourceResponse(int Id, string Name, string Description, string Location, int Capacity, bool IsActive,
-    int? OfficeLocationId = null);
+    int? OfficeLocationId = null, string? OfficeLocationName = null);
 
 /// <summary>Assigns an existing resource to an active office or removes its office association.</summary>
 public sealed record UpdateResourceOfficeRequest(

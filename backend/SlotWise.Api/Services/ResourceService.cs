@@ -17,7 +17,8 @@ public sealed class ResourceService(IResourceRepository resources) : IResourceSe
                 resource.Location,
                 resource.Capacity,
                 resource.IsActive,
-                resource.OfficeLocationId))
+                resource.OfficeLocationId,
+                resource.OfficeLocation?.Name))
             .ToList();
     }
 
@@ -36,8 +37,10 @@ public sealed class ResourceService(IResourceRepository resources) : IResourceSe
             throw new ArgumentException("Location cannot exceed 150 characters.");
         if (request.Capacity < 1)
             throw new ArgumentException("Capacity must be a positive number.");
-        if (request.OfficeLocationId.HasValue &&
-            await resources.GetActiveOfficeAsync(request.OfficeLocationId.Value, cancellationToken) is null)
+        var office = request.OfficeLocationId.HasValue
+            ? await resources.GetActiveOfficeAsync(request.OfficeLocationId.Value, cancellationToken)
+            : null;
+        if (request.OfficeLocationId.HasValue && office is null)
             throw new ArgumentException("The selected office location does not exist or is inactive.");
 
         var resource = new Resource
@@ -57,7 +60,8 @@ public sealed class ResourceService(IResourceRepository resources) : IResourceSe
             resource.Location,
             resource.Capacity,
             resource.IsActive,
-            resource.OfficeLocationId);
+            resource.OfficeLocationId,
+            office?.Name);
     }
 
     public async Task<ResourceResponse> AssignOfficeAsync(
@@ -66,8 +70,10 @@ public sealed class ResourceService(IResourceRepository resources) : IResourceSe
         ExistingBookingOfficeChange? existingBookingsAction,
         CancellationToken cancellationToken)
     {
-        if (officeLocationId.HasValue &&
-            await resources.GetActiveOfficeAsync(officeLocationId.Value, cancellationToken) is null)
+        var office = officeLocationId.HasValue
+            ? await resources.GetActiveOfficeAsync(officeLocationId.Value, cancellationToken)
+            : null;
+        if (officeLocationId.HasValue && office is null)
             throw new ArgumentException("The selected office location does not exist or is inactive.");
 
         var resource = await resources.AssignOfficeAsync(
@@ -78,6 +84,6 @@ public sealed class ResourceService(IResourceRepository resources) : IResourceSe
             cancellationToken)
             ?? throw new KeyNotFoundException("Resource not found.");
         return new ResourceResponse(resource.Id, resource.Name, resource.Description, resource.Location,
-            resource.Capacity, resource.IsActive, resource.OfficeLocationId);
+            resource.Capacity, resource.IsActive, resource.OfficeLocationId, office?.Name);
     }
 }

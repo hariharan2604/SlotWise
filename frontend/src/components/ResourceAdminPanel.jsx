@@ -94,33 +94,39 @@ export default function ResourceAdminPanel({ offices, resources, bookings, onCre
     }
   }
 
-  return <Card variant="outlined" sx={{ borderRadius: 1, borderColor: '#e8e6dc', bgcolor: '#fffefa', boxShadow: 'none' }}>
+  return <Card variant="outlined" sx={{ borderRadius: 2, borderColor: '#e8e6dc', bgcolor: '#fffefa', boxShadow: '0 8px 26px rgba(39,44,35,.035)' }}>
     <CardContent sx={{ p: { xs: 2.25, sm: 3 } }}>
-      <Box sx={{ width: 44, height: 44, mb: 2, borderRadius: '50%', display: 'grid', placeItems: 'center', bgcolor: '#e8ede0', color: '#24543f' }}><UiIcon name="plus" size={21} /></Box>
+      <Box sx={{ width: 44, height: 44, mb: 2, borderRadius: 1.5, display: 'grid', placeItems: 'center', bgcolor: '#e8ede0', color: '#24543f' }}><UiIcon name="plus" size={21} /></Box>
+      <Typography sx={{ mb: .65, color: '#718a49', fontSize: 10, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase' }}>Workspace setup</Typography>
       <Typography variant="h6">Add a shared space</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mt: .5, mb: 2.5, lineHeight: 1.65 }}>Give your team somewhere useful to meet, make, or focus.</Typography>
-      <Stack spacing={1.75}>
-        {Object.keys(fieldErrors).length > 0 && <Alert severity="error" variant="outlined" sx={{ borderRadius: 1 }}>Complete the highlighted fields.</Alert>}
+      <Stack component="form" onSubmit={(event) => { event.preventDefault(); void createResource() }} spacing={1.75}>
+        {Object.values(fieldErrors).some(Boolean) && <Alert severity="error" variant="outlined" sx={{ borderRadius: 1 }}>Complete the highlighted fields.</Alert>}
         {formError && <Alert severity="error" variant="outlined" sx={{ borderRadius: 1 }} onClose={() => setFormError('')}>{formError}</Alert>}
-        <TextField label="Space name" value={resourceName} onChange={e => { setResourceName(e.target.value); setFieldErrors(previous => ({ ...previous, name: '' })) }} error={Boolean(fieldErrors.name)} helperText={fieldErrors.name} inputProps={{ maxLength: 120 }} required />
-        <TextField label="A short description" value={resourceDescription} onChange={e => { setResourceDescription(e.target.value); setFieldErrors(previous => ({ ...previous, description: '' })) }} error={Boolean(fieldErrors.description)} helperText={fieldErrors.description} inputProps={{ maxLength: 500 }} multiline minRows={3} />
-        <TextField label="Where can we find it?" value={resourceLocation} onChange={e => { setResourceLocation(e.target.value); setFieldErrors(previous => ({ ...previous, location: '' })) }} error={Boolean(fieldErrors.location)} helperText={fieldErrors.location} inputProps={{ maxLength: 150 }} />
-        <TextField label="Capacity" type="number" value={resourceCapacity} onChange={e => { setResourceCapacity(e.target.value); setFieldErrors(previous => ({ ...previous, capacity: '' })) }} error={Boolean(fieldErrors.capacity)} helperText={fieldErrors.capacity} inputProps={{ min: 1, step: 1 }} required />
-        <TextField select label="Office location" value={resourceOfficeId} onChange={e => setResourceOfficeId(e.target.value)}>
+        <TextField fullWidth label="Space name" value={resourceName} onChange={e => { setResourceName(e.target.value); setFieldErrors(previous => ({ ...previous, name: '' })) }} error={Boolean(fieldErrors.name)} helperText={fieldErrors.name} inputProps={{ maxLength: 120 }} required />
+        <TextField fullWidth label="A short description" value={resourceDescription} onChange={e => { setResourceDescription(e.target.value); setFieldErrors(previous => ({ ...previous, description: '' })) }} error={Boolean(fieldErrors.description)} helperText={fieldErrors.description} inputProps={{ maxLength: 500 }} multiline minRows={3} />
+        <TextField fullWidth label="Where can we find it?" value={resourceLocation} onChange={e => { setResourceLocation(e.target.value); setFieldErrors(previous => ({ ...previous, location: '' })) }} error={Boolean(fieldErrors.location)} helperText={fieldErrors.location} inputProps={{ maxLength: 150 }} />
+        <TextField fullWidth label="Capacity" type="number" value={resourceCapacity} onChange={e => { setResourceCapacity(e.target.value); setFieldErrors(previous => ({ ...previous, capacity: '' })) }} error={Boolean(fieldErrors.capacity)} helperText={fieldErrors.capacity} inputProps={{ min: 1, step: 1 }} required />
+        <TextField fullWidth select label="Office location" value={resourceOfficeId} onChange={e => setResourceOfficeId(e.target.value)}>
           <MenuItem value="">Not assigned to an office</MenuItem>
           {offices.filter(office => office.isActive).map(office => <MenuItem key={office.id} value={office.id}>{office.name}</MenuItem>)}
         </TextField>
-        <Button variant="contained" onClick={createResource} disabled={savingResource} endIcon={!savingResource && <UiIcon name="arrow" size={17} />} sx={{ mt: .5, bgcolor: '#24543f', '&:hover': { bgcolor: '#193d2d' } }}>
+        <Button type="submit" variant="contained" disabled={savingResource} endIcon={!savingResource && <UiIcon name="arrow" size={17} />} sx={{ mt: .5, bgcolor: '#24543f', '&:hover': { bgcolor: '#193d2d' } }}>
           {savingResource ? <CircularProgress size={22} color="inherit" /> : 'Add resource'}
         </Button>
       </Stack>
       <Box sx={{ mt: 3, pt: 2.5, borderTop: '1px solid #efeee7' }}>
         <Typography fontWeight={700} sx={{ mb: 1 }}>Assign existing resources</Typography>
         <Stack spacing={1}>
-          {resources.map((resource) => <Stack key={resource.id} direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
-            <Typography variant="body2" sx={{ flex: 1 }}>{resource.name}</Typography>
+          {resources.map((resource) => <Stack key={resource.id} direction={{ xs: 'column', xl: 'row' }} spacing={1} alignItems={{ xl: 'center' }}>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="body2" fontWeight={700}>{resource.name}</Typography>
+              <Typography variant="caption" color="text.secondary">
+                Resource location: {resource.location || 'Location not specified'} · Office location: {resource.officeLocationName || 'No office assigned'}
+              </Typography>
+            </Box>
             <TextField select size="small" label="Office" value={assignments[resource.id] ?? String(resource.officeLocationId ?? '')}
-              onChange={(event) => setAssignments(current => ({ ...current, [resource.id]: event.target.value }))} sx={{ minWidth: 180 }}>
+              onChange={(event) => setAssignments(current => ({ ...current, [resource.id]: event.target.value }))} sx={{ width: { xs: '100%', xl: 'auto' }, minWidth: { xl: 180 } }}>
               <MenuItem value="">No office</MenuItem>
               {offices.filter(office => office.isActive).map(office => <MenuItem key={office.id} value={String(office.id)}>{office.name}</MenuItem>)}
             </TextField>

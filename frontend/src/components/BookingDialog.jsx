@@ -97,8 +97,9 @@ export default function BookingDialog({
   }
 
   const startDate = parseLocalDateTime(start)
+  const selectedResourceDetails = resources.find((resource) => resource.id === Number(selectedResource))
 
-  return <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" PaperProps={{ sx: { borderRadius: 1.5, bgcolor: '#fffefa', m: { xs: 1.5, sm: 3 } } }}>
+  return <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" PaperProps={{ sx: { borderRadius: 2, bgcolor: '#fffefa', boxShadow: '0 24px 80px rgba(27,39,29,.22)', m: { xs: 1.5, sm: 3 } } }}>
     <DialogTitle sx={{ px: { xs: 2.5, sm: 3.5 }, pt: 3.25, pb: 2, color: '#f8f6ec', bgcolor: '#24543f' }}>
       <Stack direction="row" spacing={1.5} alignItems="center">
         <Box sx={{ width: 46, height: 46, borderRadius: '50%', display: 'grid', placeItems: 'center', bgcolor: '#d6f278', color: '#1e392c' }}><UiIcon name="calendar" size={21} /></Box>
@@ -108,15 +109,35 @@ export default function BookingDialog({
         </Box>
       </Stack>
     </DialogTitle>
-    <DialogContent sx={{ px: { xs: 2.5, sm: 3.5 }, pt: '22px!important' }}>
-      <Stack spacing={2}>
+    <DialogContent sx={{ px: { xs: 2.5, sm: 3.5 }, pt: '24px!important', pb: 2.5 }}>
+      <Stack spacing={2.25}>
         {error && <Alert severity="error" variant="outlined" sx={{ borderRadius: 1 }} onClose={() => setError('')}>{error}</Alert>}
         {availability !== null && <Alert severity={availability ? 'success' : 'warning'}>
           {availability ? 'This resource is available for that time.' : 'This resource is already booked for that time.'}
         </Alert>}
         <TextField select label="Resource" value={selectedResource} error={Boolean(fieldErrors.resource)} helperText={fieldErrors.resource} onChange={e => { setSelectedResource(Number(e.target.value)); setAvailability(null); setFieldErrors(previous => ({ ...previous, resource: '' })) }} required>
-          {resources.map(resource => <MenuItem value={resource.id} key={resource.id}>{resource.name} · {resource.location || 'Location not specified'}</MenuItem>)}
+          {resources.map(resource => <MenuItem value={resource.id} key={resource.id}>
+            <Stack spacing={.2}>
+              <Typography sx={{ fontSize: 13, fontWeight: 650 }}>{resource.name}</Typography>
+              <Typography sx={{ fontSize: 11, color: '#77796f' }}>
+                Resource: {resource.location || 'Location not specified'} · Office: {resource.officeLocationName || 'No office assigned'}
+              </Typography>
+            </Stack>
+          </MenuItem>)}
         </TextField>
+        {selectedResourceDetails && <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.1, p: 1.5, border: '1px solid #e8eae1', borderRadius: 1.5, bgcolor: '#f8f9f4' }}>
+          <Box sx={{ mt: .15, display: 'flex', color: '#718a49' }}><UiIcon name="pin" size={16} /></Box>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography sx={{ fontSize: 10, fontWeight: 800, letterSpacing: .7, color: '#77796f', textTransform: 'uppercase' }}>Resource location</Typography>
+            <Typography sx={{ mt: .25, fontSize: 13, fontWeight: 650, color: '#30372e', overflowWrap: 'anywhere' }}>
+              {selectedResourceDetails.location || 'Location not specified'}
+            </Typography>
+            <Typography sx={{ mt: .8, fontSize: 10, fontWeight: 800, letterSpacing: .7, color: '#77796f', textTransform: 'uppercase' }}>Office location</Typography>
+            <Typography sx={{ mt: .25, fontSize: 13, fontWeight: 650, color: '#30372e', overflowWrap: 'anywhere' }}>
+              {selectedResourceDetails.officeLocationName || 'No office assigned'}
+            </Typography>
+          </Box>
+        </Box>}
         <DateTimePicker label="Start time" value={parseLocalDateTime(start)}
           format="dd/MM/yyyy hh:mm a"
           onChange={value => { setStart(toLocalDateTimeInput(value)); setAvailability(null); setFieldErrors(previous => ({ ...previous, start: '' })) }}
@@ -137,7 +158,7 @@ export default function BookingDialog({
         </Box>
       </Stack>
     </DialogContent>
-    <DialogActions sx={{ px: { xs: 2.5, sm: 3.5 }, pt: 1.5, pb: 3, gap: 1, flexWrap: 'wrap' }}>
+    <DialogActions sx={{ px: { xs: 2.5, sm: 3.5 }, pt: 2, pb: 3, gap: 1, flexWrap: 'wrap', borderTop: '1px solid #efeee7' }}>
       <Button onClick={onClose} color="inherit" sx={{ mr: 'auto', color: '#77796f' }}>Not now</Button>
       <Button onClick={checkAvailability} disabled={checkingAvailability || !selectedResource || !start || !end} sx={{ color: '#24543f' }}>
         {checkingAvailability ? <CircularProgress size={20} /> : 'Check availability'}

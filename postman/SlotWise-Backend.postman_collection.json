@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "eb12a943-2f2c-4cfe-9d8c-ae104ca2d00a",
     "name": "SlotWise Backend API",
-    "description": "Backend API requests for authentication, resources, bookings, and availability. Login/register responses set an HttpOnly session cookie that Postman sends automatically. Booking timestamps are generated as future UTC values before each request.",
+    "description": "Backend API requests for authentication, resources, bookings, and availability. Login/register responses set an HttpOnly session cookie that Postman sends automatically. Booking timestamps are generated as future UTC values before each request. Resource responses include location and officeLocationName; booking responses include resourceLocation and officeLocationName.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -197,6 +197,12 @@
                   "if (pm.response.code === 200) {",
                   "  const resources = pm.response.json().data;",
                   "  if (resources.length > 0) pm.environment.set('resourceId', resources[0].id);",
+                  "  pm.test('Resource list includes officeLocationName', function () {",
+                  "    pm.expect(resources).to.be.an('array');",
+                  "    resources.forEach(function (resource) {",
+                  "      pm.expect(resource).to.have.property('officeLocationName');",
+                  "    });",
+                  "  });",
                   "}"
                 ]
               }
@@ -220,6 +226,22 @@
         },
         {
           "name": "Create resource (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const resource = pm.response.json().data;",
+                  "  pm.test('Resource response includes officeLocationName', function () {",
+                  "    pm.expect(resource).to.have.property('officeLocationName');",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -265,7 +287,11 @@
                 "type": "text/javascript",
                 "exec": [
                   "if (pm.response.code === 200) {",
-                  "  pm.environment.set('bookingId', pm.response.json().data.id);",
+                  "  const booking = pm.response.json().data;",
+                  "  pm.environment.set('bookingId', booking.id);",
+                  "  pm.test('Booking response includes resourceLocation', function () {",
+                  "    pm.expect(booking).to.have.property('resourceLocation');",
+                  "  });",
                   "}"
                 ]
               }
@@ -304,6 +330,25 @@
         },
         {
           "name": "List my bookings",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const bookings = pm.response.json().data;",
+                  "  pm.test('Booking list includes resourceLocation', function () {",
+                  "    pm.expect(bookings).to.be.an('array');",
+                  "    bookings.forEach(function (booking) {",
+                  "      pm.expect(booking).to.have.property('resourceLocation');",
+                  "    });",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "url": {
@@ -322,6 +367,25 @@
         },
         {
           "name": "List all bookings (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const bookings = pm.response.json().data;",
+                  "  pm.test('Booking list includes resourceLocation', function () {",
+                  "    pm.expect(bookings).to.be.an('array');",
+                  "    bookings.forEach(function (booking) {",
+                  "      pm.expect(booking).to.have.property('resourceLocation');",
+                  "    });",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "url": {

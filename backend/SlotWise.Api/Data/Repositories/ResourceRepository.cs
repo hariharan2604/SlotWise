@@ -8,6 +8,7 @@ public sealed class ResourceRepository(AppDbContext db) : IResourceRepository
 {
     public async Task<IReadOnlyList<Resource>> GetActiveAsync(CancellationToken cancellationToken) =>
         await db.Resources.AsNoTracking()
+            .Include(resource => resource.OfficeLocation)
             .Where(resource => resource.IsActive &&
                 (!resource.OfficeLocationId.HasValue || resource.OfficeLocation!.IsActive))
             .OrderBy(resource => resource.Name)

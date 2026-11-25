@@ -73,8 +73,13 @@ export default function OverviewPanel({ resources, bookings, onBook, onViewBooki
                 <Stack spacing={1.8}>
                   <Box>
                     <Typography sx={{ fontSize: 19, fontWeight: 750, letterSpacing: '-.035em', color: '#252a23' }}>{resource.name}</Typography>
-                    <Stack direction="row" spacing={.7} alignItems="center" sx={{ mt: .7, color: '#818278' }}>
-                      <UiIcon name="pin" size={14} /><Typography variant="caption">{resource.location || 'Location to be confirmed'}</Typography>
+                    <Stack spacing={.45} sx={{ mt: .7, color: '#818278' }}>
+                      <Stack direction="row" spacing={.7} alignItems="center">
+                        <UiIcon name="pin" size={14} /><Typography variant="caption">Resource: {resource.location || 'Location not specified'}</Typography>
+                      </Stack>
+                      <Stack direction="row" spacing={.7} alignItems="center">
+                        <UiIcon name="room" size={14} /><Typography variant="caption">Office location: {resource.officeLocationName || 'No office assigned'}</Typography>
+                      </Stack>
                     </Stack>
                   </Box>
                   <Typography sx={{ minHeight: 38, fontSize: 12, lineHeight: 1.65, color: '#77796f' }}>{resource.description || 'A shared space, ready for your next big idea.'}</Typography>

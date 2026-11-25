@@ -53,8 +53,38 @@ const theme = createTheme({
       defaultProps: { size: 'small' },
       styleOverrides: {
         root: {
-          '& .MuiOutlinedInput-root': { borderRadius: 6, backgroundColor: '#fffefa' }
+          '& .MuiOutlinedInput-root': { borderRadius: 10, backgroundColor: '#fffefa' }
         }
+      }
+    },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          minHeight: 48,
+          borderRadius: 10,
+          transition: 'background-color .18s ease, box-shadow .18s ease',
+          '& .MuiOutlinedInput-notchedOutline': { borderColor: '#dedfd5', transition: 'border-color .18s ease' },
+          '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#9aa994' },
+          '&.Mui-focused': {
+            backgroundColor: '#fffefa',
+            boxShadow: '0 0 0 3px rgba(36,84,63,.09)',
+            '& .MuiOutlinedInput-notchedOutline': { borderColor: '#24543f', borderWidth: 1.5 }
+          },
+          '&.MuiInputBase-multiline': { minHeight: 0 }
+        },
+        input: { padding: '13px 14px' },
+        inputSizeSmall: { padding: '13px 14px' },
+        inputMultiline: { padding: '0' }
+      }
+    },
+    MuiInputLabel: {
+      styleOverrides: {
+        root: { color: '#666e62', fontWeight: 600, '&.Mui-focused': { color: '#24543f' } }
+      }
+    },
+    MuiFormHelperText: {
+      styleOverrides: {
+        root: { marginTop: 6, marginLeft: 2, fontSize: 11, lineHeight: 1.45 }
       }
     },
     MuiChip: {
