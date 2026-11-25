@@ -33,26 +33,26 @@ export default function Login({ onLogin }) {
     }
   }
 
-  return <Box sx={{
+  return <Box className="login-page" sx={{
     minHeight: '100vh', p: { xs: 1.5, sm: 2.5, lg: 4 }, display: 'grid', placeItems: 'center',
     bgcolor: '#f4f2eb', backgroundImage: 'radial-gradient(#d9d7cd 0.7px, transparent 0.7px)', backgroundSize: '18px 18px'
   }}>
-    <Box sx={{
+    <Box className="login-shell motion-enter" sx={{
       width: 'min(1160px, 100%)',       minHeight: { xs: 'calc(100vh - 24px)', md: 690 }, display: 'grid',
       gridTemplateColumns: { xs: '1fr', md: '1.03fr .97fr' }, borderRadius: { xs: 1, md: 1.5 }, overflow: 'hidden',
       bgcolor: '#fffefa', boxShadow: '0 30px 100px rgba(37,48,38,.14)'
     }}>
-      <Box sx={{
+      <Box className="login-brand-panel" sx={{
         minHeight: { xs: 250, md: 'auto' }, px: { xs: 3, sm: 5, md: 7 }, py: { xs: 3, md: 5 },
         position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
         color: '#f8f6ec', background: 'linear-gradient(145deg,#173e2d 0%,#24543f 58%,#416947 100%)'
       }}>
-        <Box sx={{ position: 'absolute', width: 430, height: 430, right: -230, bottom: -180, borderRadius: '50%', border: '1px solid rgba(242,246,217,.16)', '&::before': { content: '""', position: 'absolute', inset: 30, borderRadius: '50%', border: '1px solid rgba(242,246,217,.13)' }, '&::after': { content: '""', position: 'absolute', inset: 70, borderRadius: '50%', border: '1px solid rgba(242,246,217,.1)' } }} />
+        <Box className="login-brand-orbit" sx={{ position: 'absolute', width: 430, height: 430, right: -230, bottom: -180, borderRadius: '50%', border: '1px solid rgba(242,246,217,.16)', '&::before': { content: '""', position: 'absolute', inset: 30, borderRadius: '50%', border: '1px solid rgba(242,246,217,.13)' }, '&::after': { content: '""', position: 'absolute', inset: 70, borderRadius: '50%', border: '1px solid rgba(242,246,217,.1)' } }} />
         <Stack direction="row" alignItems="center" spacing={1.2} sx={{ position: 'relative' }}>
           <Box sx={{ width: 34, height: 34, display: 'grid', placeItems: 'center', borderRadius: '50%', bgcolor: '#d6f278', color: '#203c2e' }}><UiIcon name="room" size={18} /></Box>
           <Typography sx={{ fontWeight: 800, letterSpacing: '-.045em', fontSize: 22 }}>slotwise<span style={{ color: '#d6f278' }}>.</span></Typography>
         </Stack>
-        <Box sx={{ maxWidth: 470, position: 'relative', my: { xs: 4, md: 0 } }}>
+        <Box className="login-brand-copy" sx={{ maxWidth: 470, position: 'relative', my: { xs: 4, md: 0 } }}>
           <Typography sx={{ color: '#d6f278', fontSize: 11, letterSpacing: 2.2, fontWeight: 800 }}>SPACE FOR THE WAY YOU WORK</Typography>
           <Typography sx={{ mt: 2, maxWidth: 460, fontSize: { xs: 36, sm: 46, lg: 56 }, lineHeight: 1.02, letterSpacing: '-.065em', fontWeight: 700 }}>
             A better place to get things done.
@@ -68,8 +68,8 @@ export default function Login({ onLogin }) {
         <Typography variant="caption" sx={{ position: 'relative', color: 'rgba(248,246,236,.42)' }}>A little more room for what matters.</Typography>
       </Box>
 
-      <Box sx={{ display: 'grid', placeItems: 'center', p: { xs: 3, sm: 5, md: 7 } }}>
-        <Box sx={{ width: '100%', maxWidth: 390 }}>
+      <Box className="login-form-panel" sx={{ display: 'grid', placeItems: 'center', p: { xs: 3, sm: 5, md: 7 } }}>
+        <Box className="login-form-content" sx={{ width: '100%', maxWidth: 390 }}>
           <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: .8, px: 1.5, py: .75, mb: 3.5, borderRadius: 1, bgcolor: '#f0f2e8', color: '#52714a' }}>
             <UiIcon name="sparkle" size={15} /><Typography variant="caption" fontWeight={800} letterSpacing={.3}>YOUR WORKSPACE, REIMAGINED</Typography>
           </Box>

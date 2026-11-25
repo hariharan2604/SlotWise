@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import {
-  Alert, Avatar, Box, Button, CircularProgress, Drawer, Grid, IconButton, Snackbar, Stack, Typography
+  Alert, Avatar, Box, Button, Card, CardContent, Chip, CircularProgress, Drawer, Grid, IconButton, Snackbar, Stack, Typography
 } from '@mui/material'
 import { api, errorMessage } from '../api'
 import BookingList from './BookingList'
@@ -107,6 +107,14 @@ export default function Dashboard({ auth, onLogout }) {
   }[view]
   const initials = auth.displayName?.split(/\s+/).map((part) => part[0]).slice(0, 2).join('').toUpperCase()
   const today = new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date())
+  const upcomingBookings = allBookings.filter((booking) =>
+    booking.status === 'Confirmed' && new Date(booking.startUtc).getTime() > Date.now()
+  ).length
+  const adminMetrics = [
+    { label: 'Active offices', value: offices.filter((office) => office.isActive).length, note: `${offices.length} registered locations`, icon: 'pin', tint: '#edf1e4', ink: '#24543f' },
+    { label: 'Shared spaces', value: resources.length, note: 'Ready for your team', icon: 'room', tint: '#f5ebe1', ink: '#9c6939' },
+    { label: 'Upcoming bookings', value: upcomingBookings, note: 'Confirmed reservations', icon: 'calendar', tint: '#eff0e5', ink: '#69734a' }
+  ]
 
   const NavLinks = ({ compact = false }) => <Stack direction={compact ? 'row' : 'column'} spacing={compact ? .25 : .65} sx={compact ? { width: '100%' } : undefined}>
     {navItems.map((item) => {
@@ -172,8 +180,8 @@ export default function Dashboard({ auth, onLogout }) {
       <Box sx={{ maxWidth: 1340, mx: 'auto', px: { xs: 2, sm: 3.5, lg: 5 }, py: { xs: 3, md: 4.5 } }}>
         {view === 'overview' && <Grid container spacing={2.5} alignItems="stretch" sx={{ mb: { xs: 2.5, md: 4 } }}>
           <Grid size={{ xs: 12, lg: 8 }}>
-            <Box sx={{ minHeight: { xs: 210, md: 246 }, height: '100%', p: { xs: 3, sm: 4.5 }, borderRadius: 1.25, overflow: 'hidden', position: 'relative', color: '#f8f6ec', bgcolor: '#24543f', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <Box sx={{ position: 'absolute', right: { xs: -105, md: -40 }, top: { xs: 0, md: -55 }, width: 290, height: 290, borderRadius: '50%', bgcolor: 'rgba(214,242,120,.09)', border: '1px solid rgba(214,242,120,.18)', '&::before': { content: '""', position: 'absolute', inset: 30, borderRadius: '50%', border: '1px solid rgba(214,242,120,.25)' }, '&::after': { content: '""', position: 'absolute', inset: 67, borderRadius: '50%', border: '1px solid rgba(214,242,120,.2)' } }} />
+            <Box className="dashboard-hero motion-enter" sx={{ minHeight: { xs: 210, md: 246 }, height: '100%', p: { xs: 3, sm: 4.5 }, borderRadius: 1.25, overflow: 'hidden', position: 'relative', color: '#f8f6ec', bgcolor: '#24543f', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <Box className="dashboard-hero-orbit" sx={{ position: 'absolute', right: { xs: -105, md: -40 }, top: { xs: 0, md: -55 }, width: 290, height: 290, borderRadius: '50%', bgcolor: 'rgba(214,242,120,.09)', border: '1px solid rgba(214,242,120,.18)', '&::before': { content: '""', position: 'absolute', inset: 30, borderRadius: '50%', border: '1px solid rgba(214,242,120,.25)' }, '&::after': { content: '""', position: 'absolute', inset: 67, borderRadius: '50%', border: '1px solid rgba(214,242,120,.2)' } }} />
               <Box sx={{ position: 'relative', maxWidth: 570 }}>
                 <Typography sx={{ color: '#d6f278', fontSize: 10, fontWeight: 800, letterSpacing: 2 }}>{viewData.eyebrow}</Typography>
                 <Typography sx={{ mt: 1.2, fontSize: { xs: 32, sm: 42, lg: 48 }, lineHeight: 1.04, letterSpacing: '-.06em', fontWeight: 700 }}>{viewData.title}</Typography>
@@ -185,8 +193,8 @@ export default function Dashboard({ auth, onLogout }) {
             </Box>
           </Grid>
           <Grid size={{ xs: 12, lg: 4 }}>
-            <Box sx={{ height: '100%', minHeight: 180, p: 3.5, borderRadius: 1.25, position: 'relative', overflow: 'hidden', bgcolor: '#e7edda', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <Box sx={{ position: 'absolute', right: -24, bottom: -37, width: 180, height: 180, borderRadius: '50%', bgcolor: '#d6f278', opacity: .48 }} />
+            <Box className="motion-enter motion-delay-1" sx={{ height: '100%', minHeight: 180, p: 3.5, borderRadius: 1.25, position: 'relative', overflow: 'hidden', bgcolor: '#e7edda', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <Box className="dashboard-day-orb" sx={{ position: 'absolute', right: -24, bottom: -37, width: 180, height: 180, borderRadius: '50%', bgcolor: '#d6f278', opacity: .48 }} />
               <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ position: 'relative' }}>
                 <Typography sx={{ color: '#66745d', fontSize: 11, fontWeight: 800, letterSpacing: 1.5 }}>TODAY</Typography>
                 <Box sx={{ width: 38, height: 38, borderRadius: '50%', display: 'grid', placeItems: 'center', bgcolor: 'rgba(36,84,63,.08)', color: '#24543f' }}><UiIcon name="sparkle" size={19} /></Box>
@@ -209,6 +217,7 @@ export default function Dashboard({ auth, onLogout }) {
             : undefined
         } onClose={() => setError('')}>{error}</Alert>}
 
+        <Box key={view} className="page-enter">
         {loading ? <Box sx={{ display: 'grid', placeItems: 'center', minHeight: 260 }}><CircularProgress color="primary" /></Box> : <>
           {view === 'overview' && <OverviewPanel resources={resources} bookings={bookings} onBook={openBooking} onViewBookings={() => setView('bookings')} />}
           {view === 'offices' && <Suspense fallback={<Box sx={{ minHeight: 340, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box>}>
@@ -222,20 +231,95 @@ export default function Dashboard({ auth, onLogout }) {
             <BookingList bookings={bookings} onCancel={cancelBooking} />
           </Box>}
           {view === 'admin' && isAdmin && <>
-            <Box sx={{ mb: 2.5 }}>
-              <Typography variant="h4">Manage workspace</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: .5 }}>Keep office locations, shared resources, and bookings organized.</Typography>
-            </Box>
-            <Grid container spacing={2.5} alignItems="start">
-              <Grid size={{ xs: 12 }}><OfficeLocationForm onChanged={refresh} /></Grid>
-              <Grid size={{ xs: 12, lg: 5 }}><ResourceAdminPanel offices={offices} resources={resources} bookings={allBookings} onCreated={resourceCreated} onAssignmentChanged={resourceAssignmentChanged} /></Grid>
-              <Grid size={{ xs: 12, lg: 7 }}>
-                <Box sx={{ mb: 2 }}><Typography variant="h5">Workspace schedule</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: .5 }}>Bookings across the team. Future reservations can be cancelled.</Typography></Box>
-                <BookingList bookings={allBookings} onCancel={cancelBooking} />
+            <Stack spacing={2.5} className="admin-page">
+              <Box className="admin-page-hero" sx={{
+                position: 'relative', overflow: 'hidden', p: { xs: 2.75, sm: 3.5, md: 4.5 }, borderRadius: 2,
+                color: '#f8f6ec', background: 'linear-gradient(115deg, #193d2d 0%, #24543f 66%, #416947 100%)',
+                '&::after': {
+                  content: '""', position: 'absolute', width: 260, height: 260, right: { xs: -130, sm: -65 }, top: -135,
+                  borderRadius: '50%', border: '1px solid rgba(214,242,120,.2)',
+                  boxShadow: '0 0 0 28px rgba(214,242,120,.035), 0 0 0 58px rgba(214,242,120,.025)'
+                }
+              }}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }} justifyContent="space-between" sx={{ position: 'relative', zIndex: 1 }}>
+                  <Box sx={{ maxWidth: 620 }}>
+                    <Chip label="WORKSPACE ADMIN" size="small" sx={{ mb: 1.5, bgcolor: 'rgba(214,242,120,.14)', color: '#d6f278', fontWeight: 800, letterSpacing: 1 }} />
+                    <Typography sx={{ fontSize: { xs: 30, sm: 38, md: 44 }, lineHeight: 1.05, fontWeight: 750, letterSpacing: '-.055em' }}>
+                      Your workspace, <Box component="span" sx={{ color: '#d6f278' }}>well managed.</Box>
+                    </Typography>
+                    <Typography sx={{ mt: 1.25, maxWidth: 520, color: 'rgba(248,246,236,.68)', fontSize: 14, lineHeight: 1.7 }}>
+                      Keep office locations, shared spaces, and team reservations running smoothly.
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: { xs: 'none', sm: 'grid' }, flexShrink: 0, width: 62, height: 62, placeItems: 'center', borderRadius: '50%', color: '#d6f278', bgcolor: 'rgba(214,242,120,.1)', border: '1px solid rgba(214,242,120,.18)' }}>
+                    <UiIcon name="settings" size={27} />
+                  </Box>
+                </Stack>
+              </Box>
+
+              <Grid container spacing={1.75} className="motion-stagger">
+                {adminMetrics.map((metric) => <Grid key={metric.label} size={{ xs: 12, sm: 4 }}>
+                  <Card className="motion-card" variant="outlined" sx={{ height: '100%', borderColor: '#e8e6dc', borderRadius: 1.5, bgcolor: '#fffefa', boxShadow: 'none' }}>
+                    <CardContent sx={{ p: 2.25, '&:last-child': { pb: 2.25 } }}>
+                      <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
+                        <Box>
+                          <Typography sx={{ fontSize: 12, color: '#77796f' }}>{metric.label}</Typography>
+                          <Typography sx={{ mt: .75, fontSize: 32, fontWeight: 750, letterSpacing: '-.06em', lineHeight: 1, color: '#232921' }}>{metric.value}</Typography>
+                          <Typography sx={{ mt: .75, fontSize: 11, color: '#8c8d83' }}>{metric.note}</Typography>
+                        </Box>
+                        <Box sx={{ width: 42, height: 42, flexShrink: 0, borderRadius: '50%', display: 'grid', placeItems: 'center', color: metric.ink, bgcolor: metric.tint }}>
+                          <UiIcon name={metric.icon} size={19} />
+                        </Box>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                </Grid>)}
               </Grid>
-            </Grid>
+
+              <Grid container spacing={2.5} alignItems="start">
+                <Grid size={{ xs: 12, lg: 6 }}>
+                  <Stack spacing={1.25}>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Box sx={{ width: 34, height: 34, display: 'grid', placeItems: 'center', borderRadius: 1, bgcolor: '#e8ede0', color: '#24543f' }}><UiIcon name="pin" size={17} /></Box>
+                      <Box>
+                        <Typography sx={{ fontSize: 15, fontWeight: 750, letterSpacing: '-.02em' }}>Office locations</Typography>
+                        <Typography sx={{ fontSize: 11, color: '#77796f' }}>Manage addresses and map positions</Typography>
+                      </Box>
+                    </Stack>
+                    <OfficeLocationForm onChanged={refresh} />
+                  </Stack>
+                </Grid>
+                <Grid size={{ xs: 12, lg: 6 }}>
+                  <Stack spacing={1.25}>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Box sx={{ width: 34, height: 34, display: 'grid', placeItems: 'center', borderRadius: 1, bgcolor: '#f5ebe1', color: '#9c6939' }}><UiIcon name="room" size={17} /></Box>
+                      <Box>
+                        <Typography sx={{ fontSize: 15, fontWeight: 750, letterSpacing: '-.02em' }}>Shared spaces</Typography>
+                        <Typography sx={{ fontSize: 11, color: '#77796f' }}>Add spaces and manage office assignments</Typography>
+                      </Box>
+                    </Stack>
+                    <ResourceAdminPanel offices={offices} resources={resources} bookings={allBookings} onCreated={resourceCreated} onAssignmentChanged={resourceAssignmentChanged} />
+                  </Stack>
+                </Grid>
+                <Grid size={{ xs: 12 }}>
+                  <Card variant="outlined" sx={{ borderColor: '#e8e6dc', borderRadius: 1.5, bgcolor: '#fffefa', boxShadow: 'none' }}>
+                    <CardContent sx={{ p: { xs: 2, sm: 2.75 } }}>
+                      <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" spacing={1} sx={{ mb: 2.25 }}>
+                        <Box>
+                          <Typography sx={{ fontSize: 17, fontWeight: 750, letterSpacing: '-.025em' }}>Workspace schedule</Typography>
+                          <Typography sx={{ mt: .35, fontSize: 12, color: '#77796f' }}>Review reservations across your team.</Typography>
+                        </Box>
+                        <Chip size="small" label={`${allBookings.length} total`} sx={{ alignSelf: { xs: 'flex-start', sm: 'center' }, bgcolor: '#f0f2e8', color: '#52604f', fontWeight: 700 }} />
+                      </Stack>
+                      <BookingList bookings={allBookings} onCancel={cancelBooking} />
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </Grid>
+            </Stack>
           </>}
         </>}
+        </Box>
       </Box>
     </Box>
 

@@ -17,9 +17,9 @@ export default function OverviewPanel({ resources, bookings, onBook, onViewBooki
   ]
 
   return <Stack spacing={4}>
-    <Grid container spacing={1.75}>
+    <Grid container spacing={1.75} className="motion-stagger">
       {metrics.map((item, index) => <Grid size={{ xs: 12, sm: 4 }} key={item.label}>
-        <Card variant="outlined" sx={{ height: '100%', border: '1px solid #e8e6dc', borderRadius: 1, bgcolor: '#fffefa', boxShadow: 'none' }}>
+        <Card className="motion-card" variant="outlined" sx={{ height: '100%', border: '1px solid #e8e6dc', borderRadius: 1, bgcolor: '#fffefa', boxShadow: 'none' }}>
           <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
             <Stack direction="row" justifyContent="space-between" alignItems="start">
               <Box>
@@ -50,12 +50,12 @@ export default function OverviewPanel({ resources, bookings, onBook, onViewBooki
           <Typography fontWeight={700}>The first space is waiting to be added</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: .6 }}>Ask your workspace admin to make a resource available.</Typography>
         </CardContent>
-      </Card> : <Grid container spacing={2}>
+      </Card> : <Grid container spacing={2} className="motion-stagger">
         {resources.map((resource, index) => {
           const tone = resourceTones[index % resourceTones.length]
           const isRoom = /room|conference|meeting/i.test(resource.name)
           return <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={resource.id}>
-            <Card sx={{ height: '100%', border: '1px solid #e9e7de', borderRadius: 1, bgcolor: '#fffefa', overflow: 'hidden', boxShadow: '0 6px 24px rgba(39,44,35,.035)', transition: 'transform .2s ease, box-shadow .2s ease', '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 16px 38px rgba(39,44,35,.10)' } }}>
+            <Card className="motion-card" sx={{ height: '100%', border: '1px solid #e9e7de', borderRadius: 1, bgcolor: '#fffefa', overflow: 'hidden', boxShadow: '0 6px 24px rgba(39,44,35,.035)', transition: 'transform .2s ease, box-shadow .2s ease', '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 16px 38px rgba(39,44,35,.10)' } }}>
               <Box sx={{ height: 148, position: 'relative', overflow: 'hidden', bgcolor: tone.bg, color: tone.ink }}>
                 <Box sx={{ position: 'absolute', right: -25, top: -55, width: 195, height: 195, borderRadius: '50%', bgcolor: tone.accent, opacity: .6 }} />
                 <Box sx={{ position: 'absolute', right: 38, top: 22, width: 112, height: 112, borderRadius: '50%', border: `1px solid ${tone.ink}35` }} />
